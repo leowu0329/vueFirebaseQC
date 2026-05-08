@@ -15,80 +15,42 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     
-    <!-- 新增：引入 Bootstrap 5 JS Bundle (包含 Modal 所需的 Popper.js) -->
+    <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- 改用全局 CDN 載入 Vue 與 Pinia，徹底解決 Import Map 造成的模組依賴解析問題 -->
+    <!-- 全局 CDN 載入 Vue 與 Pinia -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/vue-demi"></script>
     <script src="https://unpkg.com/pinia@2/dist/pinia.iife.js"></script>
 
     <style>
-        /* 加入 v-cloak 隱藏尚未編譯的 Vue 模板，解決看到 {{ }} 括號的問題 */
-        [v-cloak] {
-            display: none !important;
-        }
-
-        :root {
-            --bs-body-font-family: 'Roboto', 'Noto Sans TC', sans-serif;
-        }
-        body {
-            font-family: var(--bs-body-font-family);
-            background-color: #f8f9fa;
-            overflow: hidden;
-        }
+        [v-cloak] { display: none !important; }
+        :root { --bs-body-font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
+        body { font-family: var(--bs-body-font-family); background-color: #f8f9fa; overflow: hidden; }
         
-        /* 側邊欄過渡動畫 (優化滑動順暢度) */
         #sidebar {
             transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 250px;
-            height: 100vh;
-            background-color: #212529;
-            z-index: 1000;
-            flex-shrink: 0;
+            width: 250px; height: 100vh; background-color: #212529; z-index: 1000; flex-shrink: 0;
         }
-        #sidebar.collapsed {
-            margin-left: -250px;
-        }
+        #sidebar.collapsed { margin-left: -250px; }
         
-        .nav-link {
-            color: rgba(255,255,255,.75);
-            padding: 1rem 1.5rem;
-            transition: 0.2s;
-        }
-        .nav-link:hover, .nav-link.active {
-            color: #fff;
-            background-color: rgba(255,255,255,.1);
-        }
+        .nav-link { color: rgba(255,255,255,.75); padding: 1rem 1.5rem; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+        .password-toggle { cursor: pointer; z-index: 10; }
+        #main-content { height: 100vh; overflow-y: auto; transition: all 0.3s ease; }
+        .auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* 密碼眼睛圖示按鈕 */
-        .password-toggle {
-            cursor: pointer;
-            z-index: 10;
-        }
-        
-        /* 主要內容區 */
-        #main-content {
-            height: 100vh;
-            overflow-y: auto;
-            transition: all 0.3s ease;
-        }
-
-        .auth-wrapper {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
+        /* 表單標籤與佈局優化 */
+        .form-label { font-size: 0.85rem; font-weight: 600; color: #495057; }
+        .modal-xl { max-width: 1140px; }
+        .bg-gradient-primary { background: linear-gradient(45deg, #0d6efd, #0dcaf0); }
+        .section-title { font-size: 0.95rem; font-weight: 700; color: #0d6efd; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -98,7 +60,7 @@
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-md-6 col-lg-5">
-                        <div class="card p-4">
+                        <div class="card p-4 shadow-lg border-0">
                             <h3 class="text-center mb-4 fw-bold">
                                 {{ authView === 'login' ? '系統登入' : (authView === 'register' ? '註冊帳號' : '重設密碼') }}
                             </h3>
@@ -112,18 +74,15 @@
                                 <div class="mb-4 position-relative">
                                     <label class="form-label">密碼</label>
                                     <div class="input-group">
-                                        <!-- 加入 placeholder 提示字句 -->
                                         <input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="loginForm.password" placeholder="請輸入密碼" required @input="loginErrorMsg = ''">
                                         <button class="btn btn-outline-secondary password-toggle" type="button" @click="showPassword = !showPassword">
                                             <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
                                         </button>
                                     </div>
-                                    <!-- 新增：帳密錯誤時顯示的紅字提示 -->
-                                    <div v-if="loginErrorMsg" class="text-danger small mt-2 fw-bold">
+                                    <div v-if="loginErrorMsg" class="text-danger small mt-2 fw-bold text-center">
                                         <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrorMsg }}
                                     </div>
                                 </div>
-                                <!-- 加入記得我選項 -->
                                 <div class="mb-3 form-check">
                                     <input type="checkbox" class="form-check-input" id="rememberMe" v-model="rememberMe">
                                     <label class="form-check-label text-muted small" for="rememberMe">記得我 (保存電子信箱 7 天)</label>
@@ -134,48 +93,16 @@
                                 </button>
                                 <div class="d-flex justify-content-between text-muted small">
                                     <a href="#" @click.prevent="authView = 'register'" class="text-decoration-none">註冊帳號</a>
-                                    <a href="#" @click.prevent="authView = 'reset'" class="text-decoration-none">忘記密碼？</a>
+                                    <a href="#" @click.prevent="authView = 'reset'" class="text-decoration-none text-muted">忘記密碼？</a>
                                 </div>
                             </form>
 
                             <!-- 註冊表單 -->
                             <form v-if="authView === 'register'" @submit.prevent="handleRegister">
-                                <div class="mb-3">
-                                    <label class="form-label">電子信箱</label>
-                                    <input type="email" class="form-control" v-model="registerForm.email" required>
-                                </div>
-                                <div class="mb-4 position-relative">
-                                    <label class="form-label">密碼</label>
-                                    <div class="input-group">
-                                        <input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="registerForm.password" required minlength="6">
-                                        <button class="btn btn-outline-secondary password-toggle" type="button" @click="showPassword = !showPassword">
-                                            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
-                                        </button>
-                                    </div>
-                                    <div class="form-text">密碼長度至少需 6 個字元</div>
-                                </div>
-                                <button type="submit" class="btn btn-success w-100 mb-3 py-2" :disabled="isLoading">
-                                    <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                                    註冊並發送驗證信
-                                </button>
-                                <div class="text-center text-muted small">
-                                    已有帳號？ <a href="#" @click.prevent="authView = 'login'" class="text-decoration-none">返回登入</a>
-                                </div>
-                            </form>
-
-                            <!-- 重設密碼表單 -->
-                            <form v-if="authView === 'reset'" @submit.prevent="handleResetPassword">
-                                <div class="mb-4">
-                                    <label class="form-label">請輸入您的電子信箱</label>
-                                    <input type="email" class="form-control" v-model="resetEmail" required>
-                                </div>
-                                <button type="submit" class="btn btn-warning w-100 mb-3 py-2 text-dark" :disabled="isLoading">
-                                    <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                                    發送重設密碼信件
-                                </button>
-                                <div class="text-center text-muted small">
-                                    想起密碼了？ <a href="#" @click.prevent="authView = 'login'" class="text-decoration-none">返回登入</a>
-                                </div>
+                                <div class="mb-3"><label class="form-label">信箱</label><input type="email" class="form-control" v-model="registerForm.email" required></div>
+                                <div class="mb-3"><label class="form-label">密碼</label><input type="password" class="form-control" v-model="registerForm.password" required minlength="6"></div>
+                                <button type="submit" class="btn btn-success w-100 mb-3 py-2" :disabled="isLoading">註冊</button>
+                                <div class="text-center small"><a href="#" @click.prevent="authView = 'login'" class="text-decoration-none text-muted">返回登入</a></div>
                             </form>
                         </div>
                     </div>
@@ -183,7 +110,7 @@
             </div>
         </div>
 
-        <!-- 登入後介面 (Dashboard Layout) -->
+        <!-- 登入後介面 (Main Dashboard) -->
         <div v-else class="d-flex w-100">
             <!-- 側邊欄 -->
             <div id="sidebar" :class="{ 'collapsed': !sidebarVisible }" class="d-flex flex-column text-white shadow">
@@ -193,273 +120,173 @@
                 </a>
                 <hr class="mt-0">
                 <ul class="nav nav-pills flex-column mb-auto px-2">
-                    <li class="nav-item mb-1">
-                        <a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'dashboard' }" @click.prevent="currentView = 'dashboard'">
-                            <i class="bi bi-house-door me-2"></i> 首頁 (Dashboard)
-                        </a>
-                    </li>
-                    <li class="nav-item mb-1">
-                        <!-- 新增 IPQC 作業選項 -->
-                        <a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'ipqc' }" @click.prevent="currentView = 'ipqc'">
-                            <i class="bi bi-clipboard2-check me-2"></i> IPQC 作業
-                        </a>
-                    </li>
-                    <li class="nav-item mb-1">
-                        <a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'profile' }" @click.prevent="currentView = 'profile'">
-                            <i class="bi bi-person-vcard me-2"></i> 個人資料管理
-                        </a>
-                    </li>
+                    <li class="nav-item mb-1"><a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'dashboard' }" @click.prevent="currentView = 'dashboard'"><i class="bi bi-house-door me-2"></i> 首頁</a></li>
+                    <li class="nav-item mb-1"><a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'ipqc' }" @click.prevent="currentView = 'ipqc'"><i class="bi bi-clipboard2-check me-2"></i> IPQC 作業</a></li>
+                    <li class="nav-item mb-1"><a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'profile' }" @click.prevent="currentView = 'profile'"><i class="bi bi-person-vcard me-2"></i> 個人資料</a></li>
                 </ul>
                 <hr>
-                <div class="p-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="bi bi-person-circle fs-4 me-2"></i>
-                        <span class="small text-truncate" style="max-width: 150px;">{{ authStore.user.email }}</span>
+                <div class="p-3 text-center">
+                    <div class="mb-2 text-truncate small">
+                        <i class="bi bi-person-circle me-2 text-primary"></i>
+                        {{ profileForm.name || authStore.user.email }}
                     </div>
-                    <button class="btn btn-outline-light w-100 btn-sm" @click="handleLogout">
-                        <i class="bi bi-box-arrow-right me-1"></i> 登出
-                    </button>
+                    <button class="btn btn-outline-light w-100 btn-sm" @click="handleLogout">登出系統</button>
                 </div>
             </div>
 
             <!-- 右側主要內容區 -->
             <div id="main-content" class="flex-grow-1 d-flex flex-column bg-light">
-                <!-- 頂部工具列 (用於切換側邊欄) -->
                 <nav class="navbar navbar-light bg-white shadow-sm px-3 py-2 d-flex justify-content-between align-items-center">
+                    <button class="btn btn-light shadow-sm" @click="sidebarVisible = !sidebarVisible" title="收合選單"><i class="bi" :class="sidebarVisible ? 'bi-text-indent-right' : 'bi-text-indent-left'"></i></button>
+                    <h5 class="mb-0 fw-bold">{{ currentView === 'dashboard' ? '首頁儀表板' : (currentView === 'ipqc' ? 'IPQC 品質檢驗紀錄' : '個人帳號資料設定') }}</h5>
                     <div class="d-flex align-items-center">
-                        <!-- 切換側邊欄的按鈕 (新增提示文字與陰影效果) -->
-                        <button class="btn btn-light shadow-sm me-3" @click="sidebarVisible = !sidebarVisible" title="顯示/隱藏側邊欄">
-                            <i class="bi" :class="sidebarVisible ? 'bi-text-indent-right' : 'bi-text-indent-left'"></i>
-                        </button>
-                        <!-- 動態更新頂部標題 -->
-                        <h5 class="mb-0 text-dark fw-bold d-none d-md-block">
-                            {{ currentView === 'dashboard' ? '首頁' : (currentView === 'profile' ? '個人資料管理' : 'IPQC 作業') }}
-                        </h5>
+                        <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-shield-check me-1"></i>連線正常</span>
                     </div>
-                    <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-shield-check me-1"></i>已驗證</span>
                 </nav>
 
-                <!-- 內容切換區 -->
-                <div class="p-4 flex-grow-1">
-                    
+                <div class="p-4 flex-grow-1 overflow-auto">
                     <!-- Dashboard 視圖 -->
                     <div v-if="currentView === 'dashboard'" class="fade-in">
-                        <h2 class="mb-4">系統儀表板</h2>
                         <div class="row g-4">
-                            <div class="col-md-4">
-                                <div class="card text-white bg-primary h-100 shadow-sm border-0">
-                                    <div class="card-body">
-                                        <h5 class="card-title">登入狀態</h5>
-                                        <p class="card-text fs-4"><i class="bi bi-check-circle me-2"></i>成功</p>
-                                        <p class="small mb-0">帳號已完成 JWT 驗證。</p>
-                                    </div>
+                            <div class="col-12 mb-2">
+                                <div class="card bg-gradient-primary text-white p-4 border-0 shadow">
+                                    <h3 class="mb-1">歡迎回來，{{ profileForm.name || authStore.user.email }}</h3>
+                                    <p class="mb-0 opacity-75">今天是 {{ new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }) }}</p>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card text-white bg-success h-100 shadow-sm border-0">
-                                    <div class="card-body">
-                                        <h5 class="card-title">信箱驗證</h5>
-                                        <p class="card-text fs-4">
-                                            <i class="bi" :class="authStore.user.emailVerified ? 'bi-shield-check' : 'bi-shield-exclamation text-warning'"></i>
-                                            {{ authStore.user.emailVerified ? '已驗證' : '未驗證' }}
-                                        </p>
-                                        <button v-if="!authStore.user.emailVerified" class="btn btn-sm btn-light mt-2 fw-bold" @click="sendVerifyEmail">重新發送驗證信</button>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm p-4 h-100">
+                                    <h5 class="fw-bold mb-3">IPQC 統計摘要</h5>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-center p-3 flex-fill border-end">
+                                            <div class="display-6 fw-bold text-primary">{{ ipqcRecords.length }}</div>
+                                            <div class="small text-muted">檢驗總單數</div>
+                                        </div>
+                                        <div class="text-center p-3 flex-fill">
+                                            <div class="display-6 fw-bold text-success">{{ ipqcRecords.filter(r => r.judgment === 'OK').length }}</div>
+                                            <div class="small text-muted">OK 單數</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-white shadow-sm h-100 border-0">
-                                    <div class="card-body">
-                                        <h5 class="card-title text-dark">快捷操作</h5>
-                                        <hr>
-                                        <button class="btn btn-outline-primary w-100 mb-2" @click="currentView = 'profile'">
-                                            前往個人資料維護
-                                        </button>
-                                    </div>
+                                    <button class="btn btn-outline-primary mt-4" @click="currentView = 'ipqc'">進入品質作業</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- IPQC 視圖 (更新為列表與 Modal) -->
+                    <!-- IPQC 視圖 -->
                     <div v-if="currentView === 'ipqc'" class="fade-in">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>IPQC 作業管理</h2>
-                            <!-- 修改：點擊按鈕開啟 Modal -->
-                            <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#ipqcModal">
+                            <h2>IPQC 品質作業管理</h2>
+                            <button class="btn btn-success shadow-sm px-4" @click="resetAndOpenModal">
                                 <i class="bi bi-plus-lg me-1"></i> 新增檢驗單
                             </button>
                         </div>
-                        
-                        <!-- 新增：檢驗單資料列表 -->
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>檢驗日期</th>
-                                                <th>時間</th>
-                                                <th>品名</th>
-                                                <th>製令編號</th>
-                                                <th>判定結果</th>
-                                                <th>巡檢員</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-if="ipqcRecords.length === 0">
-                                                <td colspan="6" class="text-center text-muted py-4">目前尚無檢驗單紀錄，請點擊右上方新增。</td>
-                                            </tr>
-                                            <tr v-for="(record, index) in ipqcRecords" :key="index">
-                                                <td>{{ record.date }}</td>
-                                                <td>{{ record.time }}</td>
-                                                <td>{{ record.itemName || '-' }}</td>
-                                                <td>{{ record.orderNumber || '-' }}</td>
-                                                <td>
-                                                    <span class="badge" :class="record.judgment === '合格' ? 'bg-success' : (record.judgment === '不合格' ? 'bg-danger' : 'bg-warning')">
-                                                        {{ record.judgment }}
-                                                    </span>
-                                                </td>
-                                                <td>{{ record.inspector || '-' }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                        <div class="card border-0 shadow-sm overflow-hidden">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>檢驗日期/時間</th>
+                                            <th>品名/品號</th>
+                                            <th>製令/客戶</th>
+                                            <th>判定結果</th>
+                                            <th>巡檢員</th>
+                                            <th class="text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-if="ipqcRecords.length === 0"><td colspan="6" class="text-center text-muted py-5">目前尚無品質紀錄。</td></tr>
+                                        <tr v-for="record in ipqcRecords" :key="record.id">
+                                            <td>
+                                                <div class="fw-bold">{{ record.date }}</div>
+                                                <div class="small text-muted">{{ record.time }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">{{ record.itemName || '-' }}</div>
+                                                <div class="small text-muted">{{ record.itemNumber || '-' }}</div>
+                                            </td>
+                                            <td>
+                                                <div>{{ record.orderNumber || '-' }}</div>
+                                                <div class="small text-muted">{{ record.customer || '-' }}</div>
+                                            </td>
+                                            <td>
+                                                <span class="badge" :class="{'bg-success': record.judgment === 'OK', 'bg-warning text-dark': record.judgment === 'MRB', 'bg-danger': record.judgment === 'NG'}">
+                                                    {{ record.judgment }}
+                                                </span>
+                                            </td>
+                                            <td>{{ record.inspector || '-' }}</td>
+                                            <td class="text-center">
+                                                <div class="btn-group btn-group-sm shadow-sm">
+                                                    <button class="btn btn-white border-end" @click="editIpqc(record)" title="修改資料"><i class="bi bi-pencil-square text-primary"></i></button>
+                                                    <button class="btn btn-white" @click="deleteIpqc(record.id)" title="移除資料"><i class="bi bi-trash text-danger"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-
-                        <!-- 新增：IPQC 表單 Modal 彈窗 -->
-                        <div class="modal fade" id="ipqcModal" tabindex="-1" aria-labelledby="ipqcModalLabel" aria-hidden="true">
+                        
+                        <!-- IPQC Modal -->
+                        <div class="modal fade" id="ipqcModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                                <div class="modal-content">
+                                <div class="modal-content shadow-lg border-0">
                                     <div class="modal-header bg-light">
-                                        <h5 class="modal-title fw-bold" id="ipqcModalLabel"><i class="bi bi-clipboard2-check me-2"></i>新增 IPQC 檢驗單</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <h5 class="modal-title fw-bold text-dark">
+                                            <i class="bi" :class="editingId ? 'bi-pencil-square' : 'bi-file-earmark-check'"></i>
+                                            {{ editingId ? '修改 IPQC 檢驗單' : '新增 IPQC 檢驗單' }}
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body p-4">
-                                        <form id="ipqcFormElement" @submit.prevent="saveIpqc">
-                                            <!-- 區塊 1: 基本資料 -->
-                                            <h5 class="mb-3 text-primary border-bottom pb-2"><i class="bi bi-info-circle me-2"></i>基本資料</h5>
+                                        <form @submit.prevent="saveIpqc">
+                                            <div class="section-title"><i class="bi bi-info-circle me-2"></i>1. 基本單據資訊</div>
                                             <div class="row g-3 mb-4">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">日期</label>
-                                                    <input type="date" class="form-control" v-model="ipqcForm.date" required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">時間</label>
-                                                    <input type="time" class="form-control" v-model="ipqcForm.time" required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">首件巡檢</label>
-                                                    <select class="form-select" v-model="ipqcForm.firstInspection">
-                                                        <option value="是">是</option>
-                                                        <option value="否">否</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">內/外銷</label>
-                                                    <select class="form-select" v-model="ipqcForm.marketType">
-                                                        <option value="" disabled>請選擇</option>
-                                                        <option value="內銷">內銷</option>
-                                                        <option value="外銷">外銷</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">客戶</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.customer" placeholder="請輸入客戶名稱">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">部門</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.department" placeholder="請輸入部門">
-                                                </div>
+                                                <div class="col-md-3"><label class="form-label">檢驗日期</label><input type="date" class="form-control" v-model="ipqcForm.date" required></div>
+                                                <div class="col-md-3"><label class="form-label">檢驗時間</label><input type="time" class="form-control" v-model="ipqcForm.time" required></div>
+                                                <div class="col-md-3"><label class="form-label">首件巡檢</label><select class="form-select" v-model="ipqcForm.firstInspection"><option value="是">是</option><option value="否">否</option></select></div>
+                                                <div class="col-md-3"><label class="form-label">內/外銷</label><select class="form-select" v-model="ipqcForm.marketType"><option value="">未設定</option><option value="內銷">內銷</option><option value="外銷">外銷</option></select></div>
+                                                <div class="col-md-4"><label class="form-label">客戶名稱</label><input type="text" class="form-control" v-model="ipqcForm.customer"></div>
+                                                <div class="col-md-4"><label class="form-label">負責部門</label><input type="text" class="form-control" v-model="ipqcForm.department"></div>
+                                                <div class="col-md-4"><label class="form-label">現場作業人員</label><input type="text" class="form-control" v-model="ipqcForm.operator"></div>
                                             </div>
 
-                                            <!-- 區塊 2: 產品與工單資訊 -->
-                                            <h5 class="mb-3 text-primary border-bottom pb-2"><i class="bi bi-box-seam me-2"></i>產品與工單資訊</h5>
+                                            <div class="section-title"><i class="bi bi-box-seam me-2"></i>2. 生產產品內容</div>
                                             <div class="row g-3 mb-4">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">製令編號</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.orderNumber">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">品號</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.itemNumber">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">品名</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.itemName">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">數量</label>
-                                                    <input type="number" class="form-control" v-model="ipqcForm.quantity" min="0">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">日期序號</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.dateSerial">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">序號</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.serialNumber">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">圖面版次</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.drawingVersion">
-                                                </div>
+                                                <div class="col-md-3"><label class="form-label">製令編號</label><input type="text" class="form-control" v-model="ipqcForm.orderNumber" placeholder="系統自動對應部門"></div>
+                                                <div class="col-md-3"><label class="form-label">產品品號</label><input type="text" class="form-control" v-model="ipqcForm.itemNumber"></div>
+                                                <div class="col-md-3"><label class="form-label">產品品名</label><input type="text" class="form-control" v-model="ipqcForm.itemName"></div>
+                                                <div class="col-md-3"><label class="form-label">生產數量</label><input type="number" class="form-control" v-model="ipqcForm.quantity"></div>
+                                                <div class="col-md-3"><label class="form-label">日期序號</label><input type="text" class="form-control" v-model="ipqcForm.dateSerial"></div>
+                                                <div class="col-md-3"><label class="form-label">產品序號</label><input type="text" class="form-control" v-model="ipqcForm.serialNumber"></div>
+                                                <div class="col-md-3"><label class="form-label">圖面版次</label><input type="text" class="form-control" v-model="ipqcForm.drawingVersion"></div>
+                                                <div class="col-md-3"><label class="form-label">檢驗工時(時)</label><input type="number" class="form-control" v-model="ipqcForm.inspectionHours" step="0.5"></div>
                                             </div>
 
-                                            <!-- 區塊 3: 檢驗與處置 -->
-                                            <h5 class="mb-3 text-primary border-bottom pb-2"><i class="bi bi-clipboard-check me-2"></i>檢驗與處置結果</h5>
+                                            <div class="section-title"><i class="bi bi-check2-square me-2"></i>3. 檢驗結論與處置</div>
                                             <div class="row g-3">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">作業人員</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.operator">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">巡檢員</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.inspector">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label fw-bold text-danger">判定</label>
+                                                <div class="col-md-3"><label class="form-label">巡檢員</label><input type="text" class="form-control bg-light" v-model="ipqcForm.inspector" readonly></div>
+                                                <div class="col-md-3"><label class="form-label text-danger fw-bold">判定結果</label>
                                                     <select class="form-select border-danger" v-model="ipqcForm.judgment">
-                                                        <option value="" disabled>請選擇判定結果</option>
-                                                        <option value="合格">合格</option>
-                                                        <option value="不合格">不合格</option>
-                                                        <option value="特採">特採</option>
+                                                        <option v-for="opt in judgmentOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                                                     </select>
                                                 </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">不良分類</label>
-                                                    <input type="text" class="form-control" v-model="ipqcForm.defectCategory" placeholder="無則免填">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">不良狀況</label>
-                                                    <textarea class="form-control" v-model="ipqcForm.defectDescription" rows="2" placeholder="詳細描述不良狀況"></textarea>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">處置對策</label>
-                                                    <textarea class="form-control" v-model="ipqcForm.countermeasure" rows="2" placeholder="詳細描述處置方式"></textarea>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">檢驗工時(時)</label>
-                                                    <input type="number" class="form-control" v-model="ipqcForm.inspectionHours" min="0" step="0.5">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">會簽進度</label>
+                                                <div class="col-md-3"><label class="form-label">不良分類</label><input type="text" class="form-control" v-model="ipqcForm.defectCategory"></div>
+                                                <div class="col-md-3"><label class="form-label">會簽進度</label>
                                                     <select class="form-select" v-model="ipqcForm.signProgress">
-                                                        <option value="未發起">未發起</option>
-                                                        <option value="簽核中">簽核中</option>
-                                                        <option value="已結案">已結案</option>
+                                                        <option value="未發起">未發起</option><option value="簽核中">簽核中</option><option value="已結案">已結案</option>
                                                     </select>
                                                 </div>
+                                                <div class="col-md-6"><label class="form-label">異常狀況描述</label><textarea class="form-control" v-model="ipqcForm.defectDescription" rows="3" placeholder="請詳細記錄不良狀況"></textarea></div>
+                                                <div class="col-md-6"><label class="form-label">處置與改善對策</label><textarea class="form-control" v-model="ipqcForm.countermeasure" rows="3" placeholder="請記錄後續處理方式"></textarea></div>
                                             </div>
                                         </form>
                                     </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                                        <!-- 修改：將原本隱藏的送出按鈕移至 Footer 並綁定點擊事件 -->
-                                        <button type="button" class="btn btn-primary" @click="saveIpqc" :disabled="isLoading">
+                                    <div class="modal-footer bg-light">
+                                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">取消</button>
+                                        <button type="button" class="btn btn-primary px-4 shadow-sm" @click="saveIpqc" :disabled="isLoading">
                                             <span v-if="isLoading" class="spinner-border spinner-border-sm me-1"></span>
-                                            <i class="bi bi-save me-1" v-else></i> 儲存資料
+                                            {{ editingId ? '確認更改紀錄' : '儲存檢驗單' }}
                                         </button>
                                     </div>
                                 </div>
@@ -467,443 +294,297 @@
                         </div>
                     </div>
 
-                    <!-- Profile CRUD 視圖 -->
+                    <!-- 個人資料管理 (欄位恢復區) -->
                     <div v-if="currentView === 'profile'" class="fade-in">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>個人資料管理</h2>
-                            <button class="btn btn-primary shadow-sm" @click="saveProfile" :disabled="isLoading">
+                            <h2>個人帳號資料管理</h2>
+                            <button class="btn btn-primary shadow-sm px-4" @click="saveProfile" :disabled="isLoading">
                                 <span v-if="isLoading" class="spinner-border spinner-border-sm me-1"></span>
-                                <i class="bi bi-save me-1" v-else></i> 儲存資料
+                                <i class="bi bi-cloud-arrow-up me-1" v-else></i> 儲存個人資料
                             </button>
                         </div>
-                        
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body p-4">
-                                <form @submit.prevent="saveProfile" class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">生日</label>
-                                        <input type="date" class="form-control" v-model="profileForm.birthday">
+                        <div class="row g-4">
+                            <!-- 左側表單 -->
+                            <div class="col-lg-8">
+                                <div class="card border-0 shadow-sm p-4">
+                                    <h5 class="section-title"><i class="bi bi-person-lines-fill me-2"></i>基本個人資訊</h5>
+                                    <div class="row g-3 text-start mb-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label">全名 / 名稱</label>
+                                            <input type="text" class="form-control" v-model="profileForm.name" placeholder="請輸入您的真實姓名">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">出生日期</label>
+                                            <input type="date" class="form-control" v-model="profileForm.birthday">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">身分證字號</label>
+                                            <input type="text" class="form-control" v-model="profileForm.idNumber" placeholder="請輸入身分證字號">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">手機號碼</label>
+                                            <input type="tel" class="form-control" v-model="profileForm.phone" placeholder="例如：0912345678">
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">身分證字號</label>
-                                        <input type="text" class="form-control" v-model="profileForm.idNumber" pattern="[A-Z][12]\d{8}" title="請輸入正確身分證格式" placeholder="例如：A123456789">
+
+                                    <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>工作與權限設定</h5>
+                                    <div class="row g-3 text-start mb-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label">工作轄區</label>
+                                            <select class="form-select" v-model="profileForm.workArea">
+                                                <option value="">請選擇轄區</option>
+                                                <option value="正義廠IQC">正義廠IQC</option>
+                                                <option value="正義廠IPQC">正義廠IPQC</option>
+                                                <option value="正義廠OQC">正義廠OQC</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">系統權限</label>
+                                            <select class="form-select" v-model="profileForm.role">
+                                                <option value="一般使用者">一般使用者</option>
+                                                <option value="管理者">管理者</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">手機號碼</label>
-                                        <input type="tel" class="form-control" v-model="profileForm.phone" placeholder="例如：0912345678">
+
+                                    <h5 class="section-title"><i class="bi bi-geo-alt me-2"></i>聯絡住址</h5>
+                                    <div class="row g-3 text-start">
+                                        <div class="col-12">
+                                            <textarea class="form-control" v-model="profileForm.address" rows="3" placeholder="請輸入詳細通訊地址"></textarea>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">工作轄區</label>
-                                        <select class="form-select" v-model="profileForm.workArea">
-                                            <option value="" disabled>請選擇轄區</option>
-                                            <option value="正義廠IQC">正義廠IQC</option>
-                                            <option value="正義廠IPQC">正義廠IPQC</option>
-                                            <option value="正義廠OQC">正義廠OQC</option>
-                                        </select>
+                                </div>
+                            </div>
+                            <!-- 右側摘要卡片 -->
+                            <div class="col-lg-4">
+                                <div class="card border-0 shadow-sm p-4 text-center h-100">
+                                    <div class="mb-3 mt-3">
+                                        <i class="bi bi-person-circle display-1 text-primary"></i>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">權限設定</label>
-                                        <select class="form-select" v-model="profileForm.role">
-                                            <option value="" disabled>請選擇權限</option>
-                                            <option value="一般使用者">一般使用者</option>
-                                            <option value="管理者">管理者</option>
-                                        </select>
+                                    <h4 class="fw-bold mb-1">{{ profileForm.name || '尚未設定姓名' }}</h4>
+                                    <p class="text-muted small">{{ authStore.user.email }}</p>
+                                    <hr>
+                                    <div class="text-start small px-3">
+                                        <div class="mb-2"><strong>目前權限：</strong> {{ profileForm.role }}</div>
+                                        <div class="mb-2"><strong>工作轄區：</strong> {{ profileForm.workArea || '未設定' }}</div>
+                                        <div class="mb-2"><strong>連線帳號：</strong> {{ authStore.user.uid }}</div>
                                     </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">聯絡住址</label>
-                                        <input type="text" class="form-control" v-model="profileForm.address" placeholder="請輸入完整地址">
-                                    </div>
-                                </form>
+                                </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ES Module Script -->
     <script type="module">
-        // 改由全局對象 (Global Object) 解構取出 Vue 與 Pinia API
-        const { createApp, ref, reactive, onMounted, watch } = Vue;
+        const { createApp, ref, reactive, onMounted } = Vue;
         const { createPinia, defineStore } = Pinia;
         
-        // Firebase Modular SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithEmailAndPassword, 
-            createUserWithEmailAndPassword, 
-            signOut, 
-            sendPasswordResetEmail, 
-            onAuthStateChanged, 
-            sendEmailVerification 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 1. 初始化 Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCpUUaLPKXxQpcZ2SUbUQ9l4fp09-1Wr5w",
             authDomain: "test-19277.firebaseapp.com",
-            databaseURL: "https://test-19277-default-rtdb.firebaseio.com",
             projectId: "test-19277",
             storageBucket: "test-19277.appspot.com",
             messagingSenderId: "567561852471",
-            appId: "1:567561852471:web:befbb80e6062fe8d1b11b2",
-            measurementId: "G-EVW9YL3G04"
+            appId: "1:567561852471:web:befbb80e6062fe8d1b11b2"
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-
         const APP_ID = firebaseConfig.projectId; 
 
-        // 2. 建立 Pinia Store 管理 Auth 狀態
         const useAuthStore = defineStore('auth', () => {
             const user = ref(null);
             const isLoggedIn = ref(false);
-
-            const setUser = (userData) => {
-                user.value = userData;
-                isLoggedIn.value = !!userData;
-            };
-
+            const setUser = (userData) => { user.value = userData; isLoggedIn.value = !!userData; };
             return { user, isLoggedIn, setUser };
         });
 
-        // 3. 建立 Vue 應用
         const vueApp = createApp({
             setup() {
                 const authStore = useAuthStore();
-                
-                // UI 狀態
                 const authView = ref('login');
                 const currentView = ref('dashboard');
-                const sidebarVisible = ref(true); // 控制側邊欄顯示/隱藏的響應式狀態
+                const sidebarVisible = ref(true);
                 const isLoading = ref(false);
                 const showPassword = ref(false);
                 const rememberMe = ref(false);
-                const loginErrorMsg = ref(''); // 新增：用於記錄登入錯誤的訊息
-
-                const loginForm = reactive({
-                    email: '', 
-                    password: ''
-                });
+                const loginErrorMsg = ref('');
+                const loginForm = reactive({ email: '', password: '' });
+                const registerForm = reactive({ email: '', password: '' });
                 
-                const registerForm = reactive({
-                    email: '',
-                    password: ''
-                });
-
-                const resetEmail = ref('');
-
-                // Profile 資料結構
-                const profileForm = reactive({
-                    birthday: '',
-                    idNumber: '',
-                    phone: '',
-                    workArea: '',
-                    role: '一般使用者',
-                    address: ''
-                });
-
-                // 新增：用於儲存已建立之 IPQC 檢驗單的陣列
                 const ipqcRecords = ref([]);
+                const judgmentOptions = ref([]);
+                const deptMappings = ref([]);
+                const editingId = ref(null);
 
-                // IPQC 檢驗單的資料結構 (21 個欄位)
+                // 個人資料響應式物件
+                const profileForm = reactive({
+                    name: "", birthday: "", idNumber: "", phone: "", workArea: "", role: "一般使用者", address: ""
+                });
+
+                // IPQC 表單響應式物件
                 const ipqcForm = reactive({
-                    date: new Date().toISOString().split('T')[0], // 預設今日
-                    time: new Date().toTimeString().substring(0, 5), // 預設現在時間
-                    firstInspection: '否',
-                    marketType: '',
-                    customer: '',
-                    department: '',
-                    orderNumber: '',
-                    itemNumber: '',
-                    itemName: '',
-                    quantity: null,
-                    dateSerial: '',
-                    serialNumber: '',
-                    drawingVersion: '',
-                    operator: '',
-                    inspector: '',
-                    judgment: '',
-                    defectCategory: '',
-                    defectDescription: '',
-                    countermeasure: '',
-                    inspectionHours: null,
-                    signProgress: '未發起'
+                    countermeasure: "", customer: "", date: new Date().toISOString().split('T')[0],
+                    dateSerial: "", defectCategory: "", defectDescription: "", department: "",
+                    drawingVersion: "", firstInspection: "否", inspectionHours: null, inspector: "",
+                    itemName: "", itemNumber: "", judgment: "OK", marketType: "", operator: "",
+                    orderNumber: "", quantity: null, serialNumber: "", signProgress: "未發起",
+                    time: new Date().toTimeString().substring(0, 5)
                 });
 
                 onMounted(() => {
                     const savedEmail = localStorage.getItem('savedEmail');
-                    const savedExpire = localStorage.getItem('savedEmailExpire');
-                    
-                    if (savedEmail && savedExpire) {
-                        const now = new Date().getTime();
-                        if (now < parseInt(savedExpire, 10)) {
-                            loginForm.email = savedEmail;
-                            rememberMe.value = true;
-                        } else {
-                            localStorage.removeItem('savedEmail');
-                            localStorage.removeItem('savedEmailExpire');
-                        }
-                    } else if (!savedEmail) {
-                        loginForm.email = 'admin@gmail.com';
-                        loginForm.password = 'admin123';
-                    }
+                    if (savedEmail) { loginForm.email = savedEmail; rememberMe.value = true; }
+                    else { loginForm.email = 'admin@gmail.com'; loginForm.password = 'admin123'; }
 
                     onAuthStateChanged(auth, async (currentUser) => {
                         authStore.setUser(currentUser);
                         if (currentUser) {
-                            currentView.value = 'dashboard';
                             await fetchProfile();
+                            await fetchJudgmentOptions();
+                            await fetchDepartmentMappings();
+                            setupIpqcListener();
                         }
                     });
                 });
 
-                const handleLogin = async () => {
-                    // 移除「登入前確認彈窗」邏輯
-                    loginErrorMsg.value = ''; // 登入前先清空先前的錯誤提示
-                    isLoading.value = true;
-                    
+                const fetchDepartmentMappings = async () => {
                     try {
-                        await signInWithEmailAndPassword(auth, loginForm.email, loginForm.password);
-                        
-                        if (rememberMe.value) {
-                            const expireTime = new Date().getTime() + (7 * 24 * 60 * 60 * 1000);
-                            localStorage.setItem('savedEmail', loginForm.email);
-                            localStorage.setItem('savedEmailExpire', expireTime.toString());
-                        } else {
-                            localStorage.removeItem('savedEmail');
-                            localStorage.removeItem('savedEmailExpire');
+                        const deptRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'department');
+                        const snapshot = await getDocs(deptRef);
+                        if (!snapshot.empty) deptMappings.value = snapshot.docs.map(doc => doc.data());
+                    } catch (e) { console.error(e); }
+                };
+
+                const fetchJudgmentOptions = async () => {
+                    try {
+                        const judgmentRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'judgment');
+                        const snapshot = await getDocs(judgmentRef);
+                        if (snapshot.empty) { judgmentOptions.value = [{ value: 'OK', label: 'OK' }, { value: 'MRB', label: 'MRB' }, { value: 'NG', label: 'NG' }]; }
+                        else {
+                            const options = snapshot.docs.map(doc => ({ value: doc.data().value || doc.id, label: doc.data().label || doc.id, order: doc.data().order || 99 }));
+                            options.sort((a, b) => a.order - b.order);
+                            judgmentOptions.value = options;
                         }
+                    } catch (e) { judgmentOptions.value = [{ value: 'OK', label: 'OK' }, { value: 'MRB', label: 'MRB' }, { value: 'NG', label: 'NG' }]; }
+                };
 
-                        // 登入成功後不需要 Swal，onAuthStateChanged 會自動捕獲狀態並跳轉至 dashboard
+                const setupIpqcListener = () => {
+                    const ipqcRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records');
+                    onSnapshot(ipqcRef, (snapshot) => {
+                        const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        records.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                        ipqcRecords.value = records;
+                    });
+                };
 
-                    } catch (error) {
-                        // 登入失敗處理：清空密碼並顯示紅字錯誤
-                        loginForm.password = '';
-                        loginErrorMsg.value = '帳號或密碼不正確，請重新輸入。';
-                    } finally {
-                        isLoading.value = false;
-                    }
+                const handleLogin = async () => {
+                    loginErrorMsg.value = ''; isLoading.value = true;
+                    try { await signInWithEmailAndPassword(auth, loginForm.email, loginForm.password); if (rememberMe.value) localStorage.setItem('savedEmail', loginForm.email); }
+                    catch (e) { loginErrorMsg.value = '電子信箱或密碼錯誤。'; }
+                    finally { isLoading.value = false; }
                 };
 
                 const handleRegister = async () => {
                     isLoading.value = true;
                     try {
-                        const userCredential = await createUserWithEmailAndPassword(auth, registerForm.email, registerForm.password);
-                        await sendEmailVerification(userCredential.user);
-                        
-                        await setDoc(doc(db, 'artifacts', APP_ID, 'users', userCredential.user.uid, 'profile', 'data'), {
-                            email: registerForm.email,
-                            role: '一般使用者',
-                            createdAt: new Date().toISOString()
-                        });
-
-                        Swal.fire({ 
-                            icon: 'success', 
-                            title: '註冊成功', 
-                            text: '已發送驗證信至您的信箱。若未收到，請務必檢查您的「垃圾信件匣」。' 
-                        });
+                        const res = await createUserWithEmailAndPassword(auth, registerForm.email, registerForm.password);
+                        await sendEmailVerification(res.user);
+                        Swal.fire({ icon: 'success', title: '註冊成功', text: '已發送驗證信，請查收。' });
                         authView.value = 'login';
-                    } catch (error) {
-                        Swal.fire({ icon: 'error', title: '註冊失敗', text: error.message });
-                    } finally {
-                        isLoading.value = false;
-                    }
+                    } catch (e) { Swal.fire({ icon: 'error', title: '註冊失敗', text: e.message }); }
+                    finally { isLoading.value = false; }
                 };
 
-                const handleResetPassword = async () => {
-                    isLoading.value = true;
-                    try {
-                        await sendPasswordResetEmail(auth, resetEmail.value);
-                        Swal.fire({ icon: 'success', title: '發送成功', text: '請檢查您的信箱以重設密碼。' });
-                        authView.value = 'login';
-                    } catch (error) {
-                        Swal.fire({ icon: 'error', title: '發送失敗', text: error.message });
-                    } finally {
-                        isLoading.value = false;
-                    }
-                };
-
-                const handleLogout = async () => {
-                    const confirm = await Swal.fire({
-                        title: '確定要登出嗎？',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#dc3545',
-                        cancelButtonColor: '#6c757d',
-                        confirmButtonText: '登出',
-                        cancelButtonText: '取消'
-                    });
-
-                    if (confirm.isConfirmed) {
-                        await signOut(auth);
-                        loginForm.password = '';
-                        authView.value = 'login';
-                    }
-                };
-
-                const sendVerifyEmail = async () => {
-                    if (authStore.user) {
-                        try {
-                            await sendEmailVerification(authStore.user);
-                            Swal.fire({ icon: 'success', title: '發送成功', text: '驗證信已重新發送，請同時留意您的「垃圾信件匣」。' });
-                        } catch(e) {
-                            if (e.code === 'auth/too-many-requests') {
-                                Swal.fire({ icon: 'warning', title: '操作頻繁', text: '發送次數過多，請稍等幾分鐘後再試。' });
-                            } else {
-                                Swal.fire({ icon: 'error', title: '錯誤', text: '發送發生錯誤，請稍後再試。' });
-                            }
-                        }
-                    }
-                };
+                const handleLogout = async () => { await signOut(auth); authView.value = 'login'; };
 
                 const fetchProfile = async () => {
                     if (!authStore.user) return;
                     try {
-                        const docRef = doc(db, 'artifacts', APP_ID, 'users', authStore.user.uid, 'profile', 'data');
-                        const docSnap = await getDoc(docRef);
-                        
-                        if (docSnap.exists()) {
-                            const data = docSnap.data();
-                            profileForm.birthday = data.birthday || '';
-                            profileForm.idNumber = data.idNumber || '';
-                            profileForm.phone = data.phone || '';
-                            profileForm.workArea = data.workArea || '';
-                            profileForm.role = data.role || '一般使用者';
-                            profileForm.address = data.address || '';
-                        }
-                    } catch (error) {
-                        console.error("讀取資料失敗:", error);
-                    }
+                        const profileRef = doc(db, 'artifacts', APP_ID, 'users', authStore.user.uid, 'profile', 'data');
+                        const snap = await getDoc(profileRef);
+                        if (snap.exists()) Object.assign(profileForm, snap.data());
+                    } catch (e) { console.error(e); }
                 };
 
                 const saveProfile = async () => {
                     if (!authStore.user) return;
                     isLoading.value = true;
                     try {
-                        const docRef = doc(db, 'artifacts', APP_ID, 'users', authStore.user.uid, 'profile', 'data');
-                        await setDoc(docRef, {
-                            birthday: profileForm.birthday,
-                            idNumber: profileForm.idNumber,
-                            phone: profileForm.phone,
-                            workArea: profileForm.workArea,
-                            role: profileForm.role,
-                            address: profileForm.address,
-                            updatedAt: new Date().toISOString()
-                        }, { merge: true });
+                        const profileRef = doc(db, 'artifacts', APP_ID, 'users', authStore.user.uid, 'profile', 'data');
+                        await setDoc(profileRef, { ...profileForm, updatedAt: serverTimestamp() }, { merge: true });
+                        Swal.fire({ icon: 'success', title: '個人資料儲存成功', timer: 1500, showConfirmButton: false });
+                    } catch (e) { Swal.fire({ icon: 'error', title: '儲存失敗' }); }
+                    finally { isLoading.value = false; }
+                };
 
-                        Swal.fire({ 
-                            icon: 'success', 
-                            title: '儲存成功', 
-                            text: '個人資料已更新。',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } catch (error) {
-                        Swal.fire({ icon: 'error', title: '儲存失敗', text: error.message });
-                    } finally {
-                        isLoading.value = false;
+                const resetAndOpenModal = () => {
+                    editingId.value = null;
+                    Object.assign(ipqcForm, { 
+                        countermeasure: "", customer: "", date: new Date().toISOString().split('T')[0], 
+                        dateSerial: "", defectCategory: "", defectDescription: "", department: "", 
+                        drawingVersion: "", firstInspection: "否", inspectionHours: null, inspector: profileForm.name || authStore.user.email, 
+                        itemName: "", itemNumber: "", judgment: "OK", marketType: "", operator: "", 
+                        orderNumber: "", quantity: null, serialNumber: "", signProgress: "未發起", 
+                        time: new Date().toTimeString().substring(0, 5) 
+                    });
+                    const modal = new bootstrap.Modal(document.getElementById('ipqcModal'));
+                    modal.show();
+                };
+
+                const editIpqc = (record) => {
+                    editingId.value = record.id;
+                    const { id, createdAt, creatorId, creatorEmail, ...editableData } = record;
+                    Object.assign(ipqcForm, editableData);
+                    const modal = new bootstrap.Modal(document.getElementById('ipqcModal'));
+                    modal.show();
+                };
+
+                const deleteIpqc = async (id) => {
+                    const result = await Swal.fire({
+                        title: '確定刪除？', text: "資料刪除後將無法恢復！", icon: 'warning',
+                        showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: '刪除', cancelButtonText: '取消'
+                    });
+                    if (result.isConfirmed) {
+                        try {
+                            await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records', id));
+                            Swal.fire({ icon: 'success', title: '已刪除', timer: 1000, showConfirmButton: false });
+                        } catch (e) { Swal.fire({ icon: 'error', title: '刪除失敗' }); }
                     }
                 };
 
-                // 處理 IPQC 檢驗單儲存邏輯
                 const saveIpqc = async () => {
                     if (!authStore.user) return;
+                    const mapping = deptMappings.value.find(m => ipqcForm.orderNumber && ipqcForm.orderNumber.startsWith(m.value));
+                    if (mapping) ipqcForm.department = mapping.dep;
+                    ipqcForm.inspector = profileForm.name || authStore.user.email;
                     
-                    // 基礎防呆檢查
-                    if (!ipqcForm.date || !ipqcForm.time || !ipqcForm.judgment) {
-                        Swal.fire({ icon: 'warning', title: '資料不完整', text: '請確認日期、時間與判定結果皆已填寫。' });
-                        return;
-                    }
-
                     isLoading.value = true;
                     try {
-                        // 在此處加入將資料寫入 Firestore 的邏輯
-                        // 模擬非同步請求
-                        await new Promise(resolve => setTimeout(resolve, 800));
-
-                        // 1. 將表單資料推入陣列中 (使用展開運算子進行深拷貝)
-                        ipqcRecords.value.unshift({ ...ipqcForm });
-
-                        Swal.fire({ 
-                            icon: 'success', 
-                            title: '儲存成功', 
-                            text: 'IPQC 檢驗單已成功建檔！',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                        
-                        // 2. 清空表單恢復預設值
-                        Object.assign(ipqcForm, {
-                            date: new Date().toISOString().split('T')[0],
-                            time: new Date().toTimeString().substring(0, 5),
-                            firstInspection: '否',
-                            marketType: '',
-                            customer: '',
-                            department: '',
-                            orderNumber: '',
-                            itemNumber: '',
-                            itemName: '',
-                            quantity: null,
-                            dateSerial: '',
-                            serialNumber: '',
-                            drawingVersion: '',
-                            operator: '',
-                            inspector: '',
-                            judgment: '',
-                            defectCategory: '',
-                            defectDescription: '',
-                            countermeasure: '',
-                            inspectionHours: null,
-                            signProgress: '未發起'
-                        });
-
-                        // 3. 隱藏 Bootstrap Modal
-                        const modalElement = document.getElementById('ipqcModal');
-                        const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                        if (modalInstance) {
-                            modalInstance.hide();
+                        if (editingId.value) {
+                            await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records', editingId.value), { ...ipqcForm, updatedAt: serverTimestamp() });
+                            Swal.fire({ icon: 'success', title: '更改成功', timer: 1000, showConfirmButton: false });
+                        } else {
+                            await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records'), { ...ipqcForm, creatorEmail: authStore.user.email, creatorId: authStore.user.uid, createdAt: serverTimestamp() });
+                            Swal.fire({ icon: 'success', title: '儲存成功', timer: 1000, showConfirmButton: false });
                         }
-                        
-                    } catch (error) {
-                        Swal.fire({ icon: 'error', title: '儲存失敗', text: '發生不可預期的錯誤。' });
-                    } finally {
-                        isLoading.value = false;
-                    }
+                        bootstrap.Modal.getInstance(document.getElementById('ipqcModal')).hide();
+                        editingId.value = null;
+                    } catch (e) { Swal.fire({ icon: 'error', title: '操作失敗', text: e.message }); }
+                    finally { isLoading.value = false; }
                 };
 
                 return {
-                    authStore,
-                    authView,
-                    currentView,
-                    sidebarVisible,
-                    isLoading,
-                    showPassword,
-                    rememberMe,
-                    loginErrorMsg,
-                    loginForm,
-                    registerForm,
-                    resetEmail,
-                    profileForm,
-                    ipqcRecords, // 暴露列表資料給模板
-                    ipqcForm,
-                    handleLogin,
-                    handleRegister,
-                    handleResetPassword,
-                    handleLogout,
-                    sendVerifyEmail,
-                    saveProfile,
-                    saveIpqc // 將 IPQC 儲存邏輯暴露給模板
+                    authStore, authView, currentView, sidebarVisible, isLoading, showPassword, rememberMe, loginErrorMsg,
+                    loginForm, registerForm, ipqcRecords, judgmentOptions, ipqcForm, profileForm, editingId,
+                    handleLogin, handleRegister, handleLogout, saveProfile, saveIpqc, editIpqc, deleteIpqc, resetAndOpenModal
                 };
             }
         });
