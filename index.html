@@ -3,595 +3,1158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>整合管理系統 | Vue3 + Firebase</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
+    <title>Supabase 整合管理系統</title>
+    <!-- Fonts: Noto Sans TC & Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <!-- 全局 CDN 載入 Vue 與 Pinia -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://unpkg.com/vue-demi"></script>
-    <script src="https://unpkg.com/pinia@2/dist/pinia.iife.js"></script>
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
-        [v-cloak] { display: none !important; }
-        :root { --bs-body-font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
-        body { font-family: var(--bs-body-font-family); background-color: #f8f9fa; overflow: hidden; }
-        
-        #sidebar {
-            transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 250px; height: 100vh; background-color: #212529; z-index: 1000; flex-shrink: 0;
+        :root {
+            --bs-body-font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+            --sidebar-width: 280px;
+            --primary-color: #0d6efd;
+            --dark-bg: #212529;
         }
-        #sidebar.collapsed { margin-left: -250px; }
+        body {
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
         
-        .nav-link { color: rgba(255,255,255,.75); padding: 1rem 1.5rem; transition: 0.2s; }
-        .nav-link:hover, .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
-        .password-toggle { cursor: pointer; z-index: 10; }
-        #main-content { height: 100vh; overflow-y: auto; transition: all 0.3s ease; }
-        .auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Sidebar Styling */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: calc(-1 * var(--sidebar-width));
+            width: var(--sidebar-width);
+            height: 100%;
+            background-color: var(--dark-bg);
+            color: white;
+            z-index: 1050;
+            transition: all 0.3s ease;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar.active {
+            left: 0;
+        }
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #3d4145;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-content {
+            flex-grow: 1;
+            padding: 1rem 0;
+            overflow-y: auto;
+        }
+        .nav-link {
+            padding: 0.8rem 1.5rem;
+            color: #adb5bd;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .nav-link:hover {
+            background-color: #343a40;
+            color: white;
+        }
+        .nav-link.active {
+            color: white;
+            background-color: var(--primary-color);
+        }
         
-        /* 表單標籤與佈局優化 */
-        .form-label { font-size: 0.85rem; font-weight: 600; color: #495057; }
-        .modal-xl { max-width: 1140px; }
-        .bg-gradient-primary { background: linear-gradient(45deg, #0d6efd, #0dcaf0); }
-        .section-title { font-size: 0.95rem; font-weight: 700; color: #0d6efd; border-bottom: 2px solid #e9ecef; padding-bottom: 8px; margin-bottom: 15px; }
+        .submenu {
+            background-color: #1a1d20;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .submenu .nav-link {
+            padding-left: 3rem;
+            font-size: 0.9rem;
+        }
+        .chevron-icon {
+            margin-left: auto;
+            transition: transform 0.3s;
+        }
+        .chevron-rotate {
+            transform: rotate(180deg);
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+        }
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .card { border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .btn-primary { border-radius: 8px; padding: 10px; font-weight: 500; }
+        .form-control, .form-select { border-radius: 8px; padding: 0.6rem 1rem; }
+        .auth-container { max-width: 450px; margin: 80px auto; }
+        .profile-container { max-width: 800px; margin: 80px auto; }
+        
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        .user-mini-profile {
+            padding: 1.2rem;
+            background: #1a1d20;
+            border-top: 1px solid #3d4145;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+            white-space: nowrap;
+        }
+        .sortable { cursor: pointer; }
+        .sortable:hover { background-color: #f1f1f1; }
+        
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .product-info-cell { line-height: 1.4; }
+        .datetime-cell { line-height: 1.3; }
+        .defect-status-text {
+            cursor: help;
+            border-bottom: 1px dotted #ccc;
+        }
+        
+        /* Modal Style for IPQC Form */
+        .modal-title-bold { font-weight: 700; color: var(--dark-bg); }
+        .form-label-custom {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 0.3rem;
+        }
+        .bg-auto-fill { background-color: #f8f9fa !important; }
     </style>
 </head>
 <body>
-    <div id="app" v-cloak>
-        <!-- 登入前介面 (Auth Flow) -->
-        <div v-if="!authStore.isLoggedIn" class="auth-wrapper bg-light">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-md-6 col-lg-5">
-                        <div class="card p-4 shadow-lg border-0">
-                            <h3 class="text-center mb-4 fw-bold">
-                                {{ authView === 'login' ? '系統登入' : (authView === 'register' ? '註冊帳號' : '重設密碼') }}
-                            </h3>
-                            
-                            <!-- 登入表單 -->
-                            <form v-if="authView === 'login'" @submit.prevent="handleLogin">
-                                <div class="mb-3">
-                                    <label class="form-label">電子信箱</label>
-                                    <input type="email" class="form-control" v-model="loginForm.email" required @input="loginErrorMsg = ''">
-                                </div>
-                                <div class="mb-4 position-relative">
-                                    <label class="form-label">密碼</label>
-                                    <div class="input-group">
-                                        <input :type="showPassword ? 'text' : 'password'" class="form-control" v-model="loginForm.password" placeholder="請輸入密碼" required @input="loginErrorMsg = ''">
-                                        <button class="btn btn-outline-secondary password-toggle" type="button" @click="showPassword = !showPassword">
-                                            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
-                                        </button>
-                                    </div>
-                                    <div v-if="loginErrorMsg" class="text-danger small mt-2 fw-bold text-center">
-                                        <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrorMsg }}
-                                    </div>
-                                </div>
-                                <div class="mb-3 form-check">
-                                    <input type="checkbox" class="form-check-input" id="rememberMe" v-model="rememberMe">
-                                    <label class="form-check-label text-muted small" for="rememberMe">記得我 (保存電子信箱 7 天)</label>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100 mb-3 py-2" :disabled="isLoading">
-                                    <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                                    登入
-                                </button>
-                                <div class="d-flex justify-content-between text-muted small">
-                                    <a href="#" @click.prevent="authView = 'register'" class="text-decoration-none">註冊帳號</a>
-                                    <a href="#" @click.prevent="authView = 'reset'" class="text-decoration-none text-muted">忘記密碼？</a>
-                                </div>
-                            </form>
 
-                            <!-- 註冊表單 -->
-                            <form v-if="authView === 'register'" @submit.prevent="handleRegister">
-                                <div class="mb-3"><label class="form-label">信箱</label><input type="email" class="form-control" v-model="registerForm.email" required></div>
-                                <div class="mb-3"><label class="form-label">密碼</label><input type="password" class="form-control" v-model="registerForm.password" required minlength="6"></div>
-                                <button type="submit" class="btn btn-success w-100 mb-3 py-2" :disabled="isLoading">註冊</button>
-                                <div class="text-center small"><a href="#" @click.prevent="authView = 'login'" class="text-decoration-none text-muted">返回登入</a></div>
-                            </form>
-                        </div>
-                    </div>
+<div id="app">
+    <div v-if="loading" class="loading-overlay">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <button v-if="auth.isLoggedIn" class="menu-toggle" @click="sidebarOpen = true">
+        <i class="bi bi-list fs-3"></i>
+    </button>
+
+    <div class="sidebar-overlay" :class="{ show: sidebarOpen }" @click="sidebarOpen = false"></div>
+
+    <div class="sidebar" :class="{ active: sidebarOpen }">
+        <div class="sidebar-header">
+            <h5 class="mb-0 fw-bold text-white">系統選單</h5>
+            <button class="btn btn-link text-white p-0" @click="sidebarOpen = false">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <a href="#" class="nav-link" :class="{ active: view === 'home' }" @click.prevent="goTo('home')">
+                <i class="bi bi-house-door"></i> 首頁
+            </a>
+
+            <!-- IPQC 手風琴選單 -->
+            <div class="nav-item">
+                <a href="#" class="nav-link" @click.prevent="ipqcMenuOpen = !ipqcMenuOpen">
+                    <i class="bi bi-clipboard-check"></i> IPQC 管理
+                    <i class="bi bi-chevron-down chevron-icon" :class="{ 'chevron-rotate': ipqcMenuOpen }"></i>
+                </a>
+                <div v-show="ipqcMenuOpen" class="submenu">
+                    <a href="#" class="nav-link" :class="{ active: view === 'ipqc-summary' }" @click.prevent="goTo('ipqc-summary')">
+                        <i class="bi bi-table"></i> IPQC 總表
+                    </a>
+                    <a href="#" class="nav-link" :class="{ active: view === 'wo-summary' }" @click.prevent="goTo('wo-summary')">
+                        <i class="bi bi-file-earmark-text"></i> 製令工單總表
+                    </a>
+                    <a href="#" class="nav-link" :class="{ active: view === 'spec-summary' }" @click.prevent="goTo('spec-summary')">
+                        <i class="bi bi-journal-check"></i> 規格總表
+                    </a>
+                    <a href="#" class="nav-link" :class="{ active: view === 'operator-summary' }" @click.prevent="goTo('operator-summary')">
+                        <i class="bi bi-people"></i> 人員名單總表
+                    </a>
                 </div>
             </div>
+
+            <a href="#" class="nav-link" :class="{ active: view === 'profile' }" @click.prevent="goTo('profile')">
+                <i class="bi bi-person-circle"></i> 個人資料設定
+            </a>
+
+            <hr class="mx-3 opacity-25">
+            <a href="#" class="nav-link text-danger" @click.prevent="handleLogout">
+                <i class="bi bi-box-arrow-right"></i> 安全登出
+            </a>
         </div>
 
-        <!-- 登入後介面 (Main Dashboard) -->
-        <div v-else class="d-flex w-100">
-            <!-- 側邊欄 -->
-            <div id="sidebar" :class="{ 'collapsed': !sidebarVisible }" class="d-flex flex-column text-white shadow">
-                <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none p-3">
-                    <i class="bi bi-box-seam fs-4 me-2"></i>
-                    <span class="fs-5 fw-bold">管理系統</span>
-                </a>
-                <hr class="mt-0">
-                <ul class="nav nav-pills flex-column mb-auto px-2">
-                    <li class="nav-item mb-1"><a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'dashboard' }" @click.prevent="currentView = 'dashboard'"><i class="bi bi-house-door me-2"></i> 首頁</a></li>
-                    <li class="nav-item mb-1"><a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'ipqc' }" @click.prevent="currentView = 'ipqc'"><i class="bi bi-clipboard2-check me-2"></i> IPQC 作業</a></li>
-                    <li class="nav-item mb-1"><a href="#" class="nav-link rounded-3" :class="{ 'active': currentView === 'profile' }" @click.prevent="currentView = 'profile'"><i class="bi bi-person-vcard me-2"></i> 個人資料</a></li>
-                </ul>
-                <hr>
-                <div class="p-3 text-center">
-                    <div class="mb-2 text-truncate small">
-                        <i class="bi bi-person-circle me-2 text-primary"></i>
-                        {{ profileForm.name || authStore.user.email }}
-                    </div>
-                    <button class="btn btn-outline-light w-100 btn-sm" @click="handleLogout">登出系統</button>
+        <div class="user-mini-profile" v-if="auth.user">
+            <div class="d-flex align-items-center gap-3 text-white">
+                <div class="bg-primary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                    {{ auth.user.email.charAt(0).toUpperCase() }}
                 </div>
-            </div>
-
-            <!-- 右側主要內容區 -->
-            <div id="main-content" class="flex-grow-1 d-flex flex-column bg-light">
-                <nav class="navbar navbar-light bg-white shadow-sm px-3 py-2 d-flex justify-content-between align-items-center">
-                    <button class="btn btn-light shadow-sm" @click="sidebarVisible = !sidebarVisible" title="收合選單"><i class="bi" :class="sidebarVisible ? 'bi-text-indent-right' : 'bi-text-indent-left'"></i></button>
-                    <h5 class="mb-0 fw-bold">{{ currentView === 'dashboard' ? '首頁儀表板' : (currentView === 'ipqc' ? 'IPQC 品質檢驗紀錄' : '個人帳號資料設定') }}</h5>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-shield-check me-1"></i>連線正常</span>
-                    </div>
-                </nav>
-
-                <div class="p-4 flex-grow-1 overflow-auto">
-                    <!-- Dashboard 視圖 -->
-                    <div v-if="currentView === 'dashboard'" class="fade-in">
-                        <div class="row g-4">
-                            <div class="col-12 mb-2">
-                                <div class="card bg-gradient-primary text-white p-4 border-0 shadow">
-                                    <h3 class="mb-1">歡迎回來，{{ profileForm.name || authStore.user.email }}</h3>
-                                    <p class="mb-0 opacity-75">今天是 {{ new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }) }}</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card border-0 shadow-sm p-4 h-100">
-                                    <h5 class="fw-bold mb-3">IPQC 統計摘要</h5>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="text-center p-3 flex-fill border-end">
-                                            <div class="display-6 fw-bold text-primary">{{ ipqcRecords.length }}</div>
-                                            <div class="small text-muted">檢驗總單數</div>
-                                        </div>
-                                        <div class="text-center p-3 flex-fill">
-                                            <div class="display-6 fw-bold text-success">{{ ipqcRecords.filter(r => r.judgment === 'OK').length }}</div>
-                                            <div class="small text-muted">OK 單數</div>
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-outline-primary mt-4" @click="currentView = 'ipqc'">進入品質作業</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- IPQC 視圖 -->
-                    <div v-if="currentView === 'ipqc'" class="fade-in">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>IPQC 品質作業管理</h2>
-                            <button class="btn btn-success shadow-sm px-4" @click="resetAndOpenModal">
-                                <i class="bi bi-plus-lg me-1"></i> 新增檢驗單
-                            </button>
-                        </div>
-                        <div class="card border-0 shadow-sm overflow-hidden">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>檢驗日期/時間</th>
-                                            <th>品名/品號</th>
-                                            <th>製令/客戶</th>
-                                            <th>判定結果</th>
-                                            <th>巡檢員</th>
-                                            <th class="text-center">操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-if="ipqcRecords.length === 0"><td colspan="6" class="text-center text-muted py-5">目前尚無品質紀錄。</td></tr>
-                                        <tr v-for="record in ipqcRecords" :key="record.id">
-                                            <td>
-                                                <div class="fw-bold">{{ record.date }}</div>
-                                                <div class="small text-muted">{{ record.time }}</div>
-                                            </td>
-                                            <td>
-                                                <div class="fw-bold">{{ record.itemName || '-' }}</div>
-                                                <div class="small text-muted">{{ record.itemNumber || '-' }}</div>
-                                            </td>
-                                            <td>
-                                                <div>{{ record.orderNumber || '-' }}</div>
-                                                <div class="small text-muted">{{ record.customer || '-' }}</div>
-                                            </td>
-                                            <td>
-                                                <span class="badge" :class="{'bg-success': record.judgment === 'OK', 'bg-warning text-dark': record.judgment === 'MRB', 'bg-danger': record.judgment === 'NG'}">
-                                                    {{ record.judgment }}
-                                                </span>
-                                            </td>
-                                            <td>{{ record.inspector || '-' }}</td>
-                                            <td class="text-center">
-                                                <div class="btn-group btn-group-sm shadow-sm">
-                                                    <button class="btn btn-white border-end" @click="editIpqc(record)" title="修改資料"><i class="bi bi-pencil-square text-primary"></i></button>
-                                                    <button class="btn btn-white" @click="deleteIpqc(record.id)" title="移除資料"><i class="bi bi-trash text-danger"></i></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        <!-- IPQC Modal -->
-                        <div class="modal fade" id="ipqcModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                                <div class="modal-content shadow-lg border-0">
-                                    <div class="modal-header bg-light">
-                                        <h5 class="modal-title fw-bold text-dark">
-                                            <i class="bi" :class="editingId ? 'bi-pencil-square' : 'bi-file-earmark-check'"></i>
-                                            {{ editingId ? '修改 IPQC 檢驗單' : '新增 IPQC 檢驗單' }}
-                                        </h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body p-4">
-                                        <form @submit.prevent="saveIpqc">
-                                            <div class="section-title"><i class="bi bi-info-circle me-2"></i>1. 基本單據資訊</div>
-                                            <div class="row g-3 mb-4">
-                                                <div class="col-md-3"><label class="form-label">檢驗日期</label><input type="date" class="form-control" v-model="ipqcForm.date" required></div>
-                                                <div class="col-md-3"><label class="form-label">檢驗時間</label><input type="time" class="form-control" v-model="ipqcForm.time" required></div>
-                                                <div class="col-md-3"><label class="form-label">首件巡檢</label><select class="form-select" v-model="ipqcForm.firstInspection"><option value="是">是</option><option value="否">否</option></select></div>
-                                                <div class="col-md-3"><label class="form-label">內/外銷</label><select class="form-select" v-model="ipqcForm.marketType"><option value="">未設定</option><option value="內銷">內銷</option><option value="外銷">外銷</option></select></div>
-                                                <div class="col-md-4"><label class="form-label">客戶名稱</label><input type="text" class="form-control" v-model="ipqcForm.customer"></div>
-                                                <div class="col-md-4"><label class="form-label">負責部門</label><input type="text" class="form-control" v-model="ipqcForm.department"></div>
-                                                <div class="col-md-4"><label class="form-label">現場作業人員</label><input type="text" class="form-control" v-model="ipqcForm.operator"></div>
-                                            </div>
-
-                                            <div class="section-title"><i class="bi bi-box-seam me-2"></i>2. 生產產品內容</div>
-                                            <div class="row g-3 mb-4">
-                                                <div class="col-md-3"><label class="form-label">製令編號</label><input type="text" class="form-control" v-model="ipqcForm.orderNumber" placeholder="系統自動對應部門"></div>
-                                                <div class="col-md-3"><label class="form-label">產品品號</label><input type="text" class="form-control" v-model="ipqcForm.itemNumber"></div>
-                                                <div class="col-md-3"><label class="form-label">產品品名</label><input type="text" class="form-control" v-model="ipqcForm.itemName"></div>
-                                                <div class="col-md-3"><label class="form-label">生產數量</label><input type="number" class="form-control" v-model="ipqcForm.quantity"></div>
-                                                <div class="col-md-3"><label class="form-label">日期序號</label><input type="text" class="form-control" v-model="ipqcForm.dateSerial"></div>
-                                                <div class="col-md-3"><label class="form-label">產品序號</label><input type="text" class="form-control" v-model="ipqcForm.serialNumber"></div>
-                                                <div class="col-md-3"><label class="form-label">圖面版次</label><input type="text" class="form-control" v-model="ipqcForm.drawingVersion"></div>
-                                                <div class="col-md-3"><label class="form-label">檢驗工時(時)</label><input type="number" class="form-control" v-model="ipqcForm.inspectionHours" step="0.5"></div>
-                                            </div>
-
-                                            <div class="section-title"><i class="bi bi-check2-square me-2"></i>3. 檢驗結論與處置</div>
-                                            <div class="row g-3">
-                                                <div class="col-md-3"><label class="form-label">巡檢員</label><input type="text" class="form-control bg-light" v-model="ipqcForm.inspector" readonly></div>
-                                                <div class="col-md-3"><label class="form-label text-danger fw-bold">判定結果</label>
-                                                    <select class="form-select border-danger" v-model="ipqcForm.judgment">
-                                                        <option v-for="opt in judgmentOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3"><label class="form-label">不良分類</label><input type="text" class="form-control" v-model="ipqcForm.defectCategory"></div>
-                                                <div class="col-md-3"><label class="form-label">會簽進度</label>
-                                                    <select class="form-select" v-model="ipqcForm.signProgress">
-                                                        <option value="未發起">未發起</option><option value="簽核中">簽核中</option><option value="已結案">已結案</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6"><label class="form-label">異常狀況描述</label><textarea class="form-control" v-model="ipqcForm.defectDescription" rows="3" placeholder="請詳細記錄不良狀況"></textarea></div>
-                                                <div class="col-md-6"><label class="form-label">處置與改善對策</label><textarea class="form-control" v-model="ipqcForm.countermeasure" rows="3" placeholder="請記錄後續處理方式"></textarea></div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div class="modal-footer bg-light">
-                                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">取消</button>
-                                        <button type="button" class="btn btn-primary px-4 shadow-sm" @click="saveIpqc" :disabled="isLoading">
-                                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-1"></span>
-                                            {{ editingId ? '確認更改紀錄' : '儲存檢驗單' }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 個人資料管理 (欄位恢復區) -->
-                    <div v-if="currentView === 'profile'" class="fade-in">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h2>個人帳號資料管理</h2>
-                            <button class="btn btn-primary shadow-sm px-4" @click="saveProfile" :disabled="isLoading">
-                                <span v-if="isLoading" class="spinner-border spinner-border-sm me-1"></span>
-                                <i class="bi bi-cloud-arrow-up me-1" v-else></i> 儲存個人資料
-                            </button>
-                        </div>
-                        <div class="row g-4">
-                            <!-- 左側表單 -->
-                            <div class="col-lg-8">
-                                <div class="card border-0 shadow-sm p-4">
-                                    <h5 class="section-title"><i class="bi bi-person-lines-fill me-2"></i>基本個人資訊</h5>
-                                    <div class="row g-3 text-start mb-4">
-                                        <div class="col-md-6">
-                                            <label class="form-label">全名 / 名稱</label>
-                                            <input type="text" class="form-control" v-model="profileForm.name" placeholder="請輸入您的真實姓名">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">出生日期</label>
-                                            <input type="date" class="form-control" v-model="profileForm.birthday">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">身分證字號</label>
-                                            <input type="text" class="form-control" v-model="profileForm.idNumber" placeholder="請輸入身分證字號">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">手機號碼</label>
-                                            <input type="tel" class="form-control" v-model="profileForm.phone" placeholder="例如：0912345678">
-                                        </div>
-                                    </div>
-
-                                    <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>工作與權限設定</h5>
-                                    <div class="row g-3 text-start mb-4">
-                                        <div class="col-md-6">
-                                            <label class="form-label">工作轄區</label>
-                                            <select class="form-select" v-model="profileForm.workArea">
-                                                <option value="">請選擇轄區</option>
-                                                <option value="正義廠IQC">正義廠IQC</option>
-                                                <option value="正義廠IPQC">正義廠IPQC</option>
-                                                <option value="正義廠OQC">正義廠OQC</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">系統權限</label>
-                                            <select class="form-select" v-model="profileForm.role">
-                                                <option value="一般使用者">一般使用者</option>
-                                                <option value="管理者">管理者</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <h5 class="section-title"><i class="bi bi-geo-alt me-2"></i>聯絡住址</h5>
-                                    <div class="row g-3 text-start">
-                                        <div class="col-12">
-                                            <textarea class="form-control" v-model="profileForm.address" rows="3" placeholder="請輸入詳細通訊地址"></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- 右側摘要卡片 -->
-                            <div class="col-lg-4">
-                                <div class="card border-0 shadow-sm p-4 text-center h-100">
-                                    <div class="mb-3 mt-3">
-                                        <i class="bi bi-person-circle display-1 text-primary"></i>
-                                    </div>
-                                    <h4 class="fw-bold mb-1">{{ profileForm.name || '尚未設定姓名' }}</h4>
-                                    <p class="text-muted small">{{ authStore.user.email }}</p>
-                                    <hr>
-                                    <div class="text-start small px-3">
-                                        <div class="mb-2"><strong>目前權限：</strong> {{ profileForm.role }}</div>
-                                        <div class="mb-2"><strong>工作轄區：</strong> {{ profileForm.workArea || '未設定' }}</div>
-                                        <div class="mb-2"><strong>連線帳號：</strong> {{ authStore.user.uid }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="overflow-hidden">
+                    <p class="mb-0 small fw-bold text-truncate">{{ auth.user.user_metadata?.full_name || '使用者' }}</p>
+                    <p class="mb-0 text-muted text-truncate" style="font-size: 0.75rem;">{{ auth.user.email }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        const { createApp, ref, reactive, onMounted } = Vue;
-        const { createPinia, defineStore } = Pinia;
+    <!-- 主內容區 -->
+    <div class="container-fluid py-5" style="margin-top: 40px; padding-left: 5%; padding-right: 5%;">
         
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        <!-- 登入頁面 -->
+        <div v-if="view === 'login'" class="auth-container w-100">
+            <div class="card p-4 shadow">
+                <h3 class="text-center mb-4 fw-bold text-primary">會員登入</h3>
+                <form @submit.prevent="handleLogin">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">電子信箱</label>
+                        <input type="email" class="form-control" v-model="form.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">密碼</label>
+                        <input type="password" class="form-control" v-model="form.password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">登入系統</button>
+                </form>
+            </div>
+        </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCpUUaLPKXxQpcZ2SUbUQ9l4fp09-1Wr5w",
-            authDomain: "test-19277.firebaseapp.com",
-            projectId: "test-19277",
-            storageBucket: "test-19277.appspot.com",
-            messagingSenderId: "567561852471",
-            appId: "1:567561852471:web:befbb80e6062fe8d1b11b2"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const APP_ID = firebaseConfig.projectId; 
+        <!-- 規格總表 -->
+        <div v-if="view === 'spec-summary'" class="w-100">
+            <div class="row align-items-center mb-4">
+                <div class="col"><h2 class="fw-bold"><i class="bi bi-journal-check me-2"></i>規格總表</h2></div>
+                <div class="col-auto d-flex gap-2">
+                    <button class="btn btn-outline-success" @click="exportSpecs"><i class="bi bi-file-earmark-excel"></i> 匯出備份</button>
+                    <button class="btn btn-outline-info" @click="triggerImportSpecs"><i class="bi bi-file-earmark-arrow-up"></i> 匯入規格</button>
+                    <button class="btn btn-primary" @click="openSpecModal()"><i class="bi bi-plus-lg"></i> 新增規格</button>
+                    <input type="file" id="importSpecsInput" style="display: none" accept=".xlsx, .xls" @change="handleFileImportSpecs">
+                </div>
+            </div>
 
-        const useAuthStore = defineStore('auth', () => {
-            const user = ref(null);
-            const isLoggedIn = ref(false);
-            const setUser = (userData) => { user.value = userData; isLoggedIn.value = !!userData; };
-            return { user, isLoggedIn, setUser };
-        });
+            <div class="card mb-4 p-3 border-0 shadow-sm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0" placeholder="搜尋品號、品名、規格內容..." v-model="specSearch">
+                        </div>
+                    </div>
+                    <div class="col-md-2 ms-auto">
+                        <div class="input-group">
+                            <span class="input-group-text small">每頁顯示</span>
+                            <select class="form-select" v-model="specPageSize">
+                                <option :value="10">10</option>
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        const vueApp = createApp({
-            setup() {
-                const authStore = useAuthStore();
-                const authView = ref('login');
-                const currentView = ref('dashboard');
-                const sidebarVisible = ref(true);
-                const isLoading = ref(false);
-                const showPassword = ref(false);
-                const rememberMe = ref(false);
-                const loginErrorMsg = ref('');
-                const loginForm = reactive({ email: '', password: '' });
-                const registerForm = reactive({ email: '', password: '' });
-                
-                const ipqcRecords = ref([]);
-                const judgmentOptions = ref([]);
-                const deptMappings = ref([]);
-                const editingId = ref(null);
+            <div class="table-container shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th class="sortable" @click="setSpecSort('product_number')">品號 <i class="bi" :class="getSortIcon('spec', 'product_number')"></i></th>
+                                <th class="sortable" @click="setSpecSort('product_name')">品名 <i class="bi" :class="getSortIcon('spec', 'product_name')"></i></th>
+                                <th>規格</th>
+                                <th>版次</th>
+                                <th>檢驗工時</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in paginatedSpecList" :key="item.id">
+                                <td class="font-monospace fw-bold text-primary">{{ item.product_number }}</td>
+                                <td>{{ item.product_name }}</td>
+                                <td class="text-muted">{{ item.spec }}</td>
+                                <td>{{ item.version || '-' }}</td>
+                                <td>{{ item.inspection_hours || 0 }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @click="openSpecModal(item)"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-outline-danger" @click="confirmDeleteSpec(item.id)"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredSpecList.length === 0">
+                                <td colspan="6" class="text-center py-5 text-muted">目前查無規格資料</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                // 個人資料響應式物件
-                const profileForm = reactive({
-                    name: "", birthday: "", idNumber: "", phone: "", workArea: "", role: "一般使用者", address: ""
+            <div class="pagination-container" v-if="filteredSpecList.length > 0">
+                <div class="text-muted small">顯示第 {{ specStartIndex + 1 }} 至 {{ specEndIndex }} 筆資料，共 {{ filteredSpecList.length }} 筆</div>
+                <nav><ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" :class="{ disabled: specCurrentPage === 1 }"><a class="page-link" @click.prevent="specCurrentPage = 1">首頁</a></li>
+                    <li class="page-item" v-for="p in specVisiblePages" :key="p" :class="{ active: specCurrentPage === p }"><a class="page-link" @click.prevent="specCurrentPage = p">{{ p }}</a></li>
+                    <li class="page-item" :class="{ disabled: specCurrentPage === specTotalPages }"><a class="page-link" @click.prevent="specCurrentPage = specTotalPages">末頁</a></li>
+                </ul></nav>
+            </div>
+        </div>
+
+        <!-- 人員名單總表 -->
+        <div v-if="view === 'operator-summary'" class="w-100">
+            <div class="row align-items-center mb-4">
+                <div class="col"><h2 class="fw-bold"><i class="bi bi-people me-2"></i>人員名單總表</h2></div>
+                <div class="col-auto d-flex gap-2">
+                    <button class="btn btn-outline-success" @click="exportOperators"><i class="bi bi-file-earmark-excel"></i> 匯出備份</button>
+                    <button class="btn btn-outline-info" @click="triggerImportOperators"><i class="bi bi-file-earmark-arrow-up"></i> 匯入名單</button>
+                    <button class="btn btn-primary" @click="openOperatorModal()"><i class="bi bi-plus-lg"></i> 新增人員</button>
+                    <input type="file" id="importOperatorsInput" style="display: none" accept=".xlsx, .xls" @change="handleFileImportOperators">
+                </div>
+            </div>
+
+            <div class="card mb-4 p-3 border-0 shadow-sm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0" placeholder="搜尋部門或姓名..." v-model="operatorSearch">
+                        </div>
+                    </div>
+                    <div class="col-md-2 ms-auto">
+                        <div class="input-group">
+                            <span class="input-group-text small">每頁顯示</span>
+                            <select class="form-select" v-model="operatorPageSize">
+                                <option :value="10">10</option>
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th class="sortable" @click="setOperatorSort('department')">部門別 <i class="bi" :class="getSortIcon('operator', 'department')"></i></th>
+                                <th class="sortable" @click="setOperatorSort('name')">姓名 <i class="bi" :class="getSortIcon('operator', 'name')"></i></th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="op in paginatedOperatorList" :key="op.id">
+                                <td class="fw-bold text-dark">{{ op.department }}</td>
+                                <td>{{ op.name }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @click="openOperatorModal(op)"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-outline-danger" @click="confirmDeleteOperator(op.id)"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredOperatorList.length === 0">
+                                <td colspan="3" class="text-center py-5 text-muted">目前查無人員資料</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-container" v-if="filteredOperatorList.length > 0">
+                <div class="text-muted small">顯示第 {{ operatorStartIndex + 1 }} 至 {{ operatorEndIndex }} 筆資料，共 {{ filteredOperatorList.length }} 筆</div>
+                <nav><ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" :class="{ disabled: operatorCurrentPage === 1 }"><a class="page-link" @click.prevent="operatorCurrentPage = 1">首頁</a></li>
+                    <li class="page-item" v-for="p in operatorVisiblePages" :key="p" :class="{ active: operatorCurrentPage === p }"><a class="page-link" @click.prevent="operatorCurrentPage = p">{{ p }}</a></li>
+                    <li class="page-item" :class="{ disabled: operatorCurrentPage === operatorTotalPages }"><a class="page-link" @click.prevent="operatorCurrentPage = operatorTotalPages">末頁</a></li>
+                </ul></nav>
+            </div>
+        </div>
+
+        <!-- 製令工單 -->
+        <div v-if="view === 'wo-summary'" class="w-100">
+            <div class="row align-items-center mb-4">
+                <div class="col"><h2 class="fw-bold"><i class="bi bi-file-earmark-text me-2"></i>製令工單總表</h2></div>
+                <div class="col-auto d-flex gap-2">
+                    <button class="btn btn-outline-success" @click="exportOrders"><i class="bi bi-file-earmark-excel"></i> 匯出備份</button>
+                    <button class="btn btn-outline-info" @click="triggerImportOrders"><i class="bi bi-file-earmark-arrow-up"></i> 匯入工單</button>
+                    <button class="btn btn-primary" @click="openOrderModal()"><i class="bi bi-plus-lg"></i> 新增工單</button>
+                    <input type="file" id="importOrdersInput" style="display: none" accept=".xlsx, .xls" @change="handleFileImportOrders">
+                </div>
+            </div>
+
+            <div class="card mb-4 p-3 border-0 shadow-sm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0" placeholder="搜尋製令編號、品號、品名..." v-model="orderSearch">
+                        </div>
+                    </div>
+                    <div class="col-md-2 ms-auto">
+                        <div class="input-group">
+                            <span class="input-group-text small">每頁顯示</span>
+                            <select class="form-select" v-model="orderPageSize">
+                                <option :value="10">10</option>
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th class="sortable" @click="setOrderSort('order_number')">製令編號 <i class="bi" :class="getSortIcon('order', 'order_number')"></i></th>
+                                <th class="sortable" @click="setOrderSort('product_number')">品號 <i class="bi" :class="getSortIcon('order', 'product_number')"></i></th>
+                                <th>品名</th>
+                                <th class="sortable" @click="setOrderSort('quantity')">數量 <i class="bi" :class="getSortIcon('order', 'quantity')"></i></th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="order in paginatedOrderList" :key="order.id">
+                                <td class="fw-bold text-dark">{{ order.order_number }}</td>
+                                <td class="font-monospace text-primary">{{ order.product_number }}</td>
+                                <td>{{ order.product_name }}</td>
+                                <td>{{ order.quantity }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @click="openOrderModal(order)"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-outline-danger" @click="confirmDeleteOrder(order.id)"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredOrderList.length === 0">
+                                <td colspan="5" class="text-center py-5 text-muted">目前查無工單資料</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-container" v-if="filteredOrderList.length > 0">
+                <div class="text-muted small">顯示第 {{ orderStartIndex + 1 }} 至 {{ orderEndIndex }} 筆資料，共 {{ filteredOrderList.length }} 筆</div>
+                <nav><ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" :class="{ disabled: orderCurrentPage === 1 }"><a class="page-link" @click.prevent="orderCurrentPage = 1">首頁</a></li>
+                    <li class="page-item" v-for="p in orderVisiblePages" :key="p" :class="{ active: orderCurrentPage === p }"><a class="page-link" @click.prevent="orderCurrentPage = p">{{ p }}</a></li>
+                    <li class="page-item" :class="{ disabled: orderCurrentPage === orderTotalPages }"><a class="page-link" @click.prevent="orderCurrentPage = orderTotalPages">末頁</a></li>
+                </ul></nav>
+            </div>
+        </div>
+
+        <!-- IPQC 總表 -->
+        <div v-if="view === 'ipqc-summary'" class="w-100">
+            <div class="row align-items-center mb-4">
+                <div class="col"><h2 class="fw-bold"><i class="bi bi-table me-2"></i>IPQC 檢驗總表</h2></div>
+                <div class="col-auto d-flex gap-2">
+                    <button class="btn btn-outline-success" @click="exportIpqc"><i class="bi bi-file-earmark-excel"></i> 匯出 IPQC</button>
+                    <button class="btn btn-outline-info" @click="triggerImportIpqc"><i class="bi bi-file-earmark-arrow-up"></i> 匯入 IPQC</button>
+                    <button class="btn btn-primary" @click="openIpqcModal()"><i class="bi bi-plus-lg"></i> 新增紀錄</button>
+                    <input type="file" id="importIpqcInput" style="display: none" accept=".xlsx, .xls" @change="handleFileImportIpqc">
+                </div>
+            </div>
+
+            <div class="card mb-4 p-3 border-0 shadow-sm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0" placeholder="搜尋製令、品號、品名或巡檢員..." v-model="ipqcSearch">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" v-model="ipqcFilterDefect">
+                            <option value="">所有不良分類 (不限)</option>
+                            <option v-for="opt in ['無','無對應圖面','圖物不符','無工單','無檢檢驗表單','尺寸NG','外觀NG','人員作業疏失','無SOP']" :key="opt" :value="opt">{{ opt }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 ms-auto">
+                        <div class="input-group">
+                            <span class="input-group-text small">每頁顯示</span>
+                            <select class="form-select" v-model="ipqcPageSize">
+                                <option :value="10">10</option>
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th class="sortable" @click="setIpqcSort('date')">日期 / 時間 <i class="bi" :class="getSortIcon('ipqc', 'date')"></i></th>
+                                <th class="sortable" @click="setIpqcSort('order_number')">製令編號 <i class="bi" :class="getSortIcon('ipqc', 'order_number')"></i></th>
+                                <th style="min-width: 200px;">產品資訊</th>
+                                <th>圖面版次</th>
+                                <th>作業人員</th>
+                                <th>不良分類</th>
+                                <th>不良狀態</th>
+                                <th>巡檢員</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="ipqc in paginatedIpqcList" :key="ipqc.id">
+                                <td class="datetime-cell">
+                                    <div class="fw-bold text-dark">{{ ipqc.date }}</div>
+                                    <div class="small text-muted">{{ ipqc.time }}</div>
+                                </td>
+                                <td class="fw-bold text-dark">{{ ipqc.order_number }}</td>
+                                <td class="product-info-cell">
+                                    <div class="fw-bold text-primary">{{ ipqc.product_number }} <span class="text-dark small opacity-75 mx-1">x</span> {{ ipqc.quantity }}</div>
+                                    <div class="small text-dark">{{ ipqc.product_name }}</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">{{ ipqc.spec }}</div>
+                                </td>
+                                <td>{{ ipqc.draw_ver || '-' }}</td>
+                                <td>{{ ipqc.operator || '-' }}</td>
+                                <td>
+                                    <span v-if="ipqc.defect_classification && ipqc.defect_classification !== '無'" class="badge bg-warning text-dark">{{ ipqc.defect_classification }}</span>
+                                    <span v-else class="text-muted">無</span>
+                                </td>
+                                <td>
+                                    <span class="defect-status-text" :title="ipqc.defect_status">
+                                        {{ truncateText(ipqc.defect_status, 10) }}
+                                    </span>
+                                </td>
+                                <td>{{ ipqc.inspector }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @click="openIpqcModal(ipqc)"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-outline-danger" @click="confirmDeleteIpqc(ipqc.id)"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="pagination-container" v-if="filteredIpqcList.length > 0">
+                <div class="text-muted small">顯示第 {{ ipqcStartIndex + 1 }} 至 {{ ipqcEndIndex }} 筆資料，共 {{ filteredIpqcList.length }} 筆 (已加載所有歷史紀錄)</div>
+                <nav><ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" :class="{ disabled: ipqcCurrentPage === 1 }"><a class="page-link" @click.prevent="ipqcCurrentPage = 1">首頁</a></li>
+                    <li class="page-item" v-for="p in ipqcVisiblePages" :key="p" :class="{ active: ipqcCurrentPage === p }"><a class="page-link" @click.prevent="ipqcCurrentPage = p">{{ p }}</a></li>
+                    <li class="page-item" :class="{ disabled: ipqcCurrentPage === ipqcTotalPages }"><a class="page-link" @click.prevent="ipqcCurrentPage = ipqcTotalPages">末頁</a></li>
+                </ul></nav>
+            </div>
+        </div>
+
+        <!-- 首頁 -->
+        <div v-if="view === 'home'" class="w-100 text-center">
+            <div class="jumbotron bg-white p-5 shadow-sm rounded">
+                <h1 class="display-4 fw-bold text-dark">工廠管理資訊系統</h1>
+                <p class="lead">整合規格管理、生產工單與 IPQC 品質巡檢數據</p>
+                <hr class="my-4">
+                <div class="row justify-content-center g-4">
+                    <div class="col-md-3" v-for="target in [
+                        {v:'spec-summary', n:'規格資料', i:'bi-journal-check', c:'text-primary'}, 
+                        {v:'wo-summary', n:'製令工單', i:'bi-file-earmark-text', c:'text-success'}, 
+                        {v:'ipqc-summary', n:'IPQC 檢驗', i:'bi-table', c:'text-warning'},
+                        {v:'operator-summary', n:'人員名單', i:'bi-people', c:'text-info'}
+                    ]" :key="target.v">
+                        <div class="card h-100 p-4 border-0 shadow-sm hover-lift" @click="goTo(target.v)" style="cursor:pointer">
+                            <i class="bi fs-2 mb-2" :class="[target.i, target.c]"></i>
+                            <h5 class="fw-bold">{{ target.n }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 個人資料 -->
+        <div v-if="view === 'profile'" class="profile-container w-100">
+            <div class="card p-4 shadow-sm">
+                <h3 class="text-center mb-4 fw-bold">個人資料設定</h3>
+                <form @submit.prevent="handleUpdateProfile">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small text-muted">電子信箱</label>
+                            <input type="email" class="form-control bg-light" :value="auth.user?.email" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">顯示名稱</label>
+                            <input type="text" class="form-control" v-model="form.name" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">更新資料</button>
+                    <button type="button" @click="goTo('home')" class="btn btn-link w-100 mt-2">返回首頁</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- 人員 Modal -->
+    <div class="modal fade" id="operatorModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5>{{ isEditing ? '編輯' : '新增' }}人員</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form @submit.prevent="saveOperator"><div class="modal-body">
+        <div class="mb-3">
+            <label class="small fw-bold">部門別</label>
+            <select class="form-select" v-model="operatorForm.department" required>
+                <option value="" disabled>請選擇部門</option>
+                <option v-for="opt in ['正義廠組裝課', '正義廠電機組', '正義廠機加課', '正義廠射出課', '正義廠燒崁組', '正義廠射加組']" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="small fw-bold">姓名</label>
+            <input type="text" class="form-control" v-model="operatorForm.name" required placeholder="輸入姓名">
+        </div>
+    </div><div class="modal-footer"><button type="submit" class="btn btn-primary w-100">儲存</button></div></form></div></div></div>
+
+    <!-- 規格 Modal -->
+    <div class="modal fade" id="specModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5>{{ isEditing ? '編輯' : '新增' }}規格</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form @submit.prevent="saveSpec"><div class="modal-body"><div class="mb-3"><label class="small fw-bold">品號</label><input type="text" class="form-control" v-model="specForm.product_number" required></div><div class="mb-3"><label class="small fw-bold">品名</label><input type="text" class="form-control" v-model="specForm.product_name" required></div><div class="mb-3"><label class="small fw-bold">規格</label><textarea class="form-control" v-model="specForm.spec"></textarea></div><div class="row"><div class="col-md-6 mb-3"><label class="small fw-bold">版次</label><input type="text" class="form-control" v-model="specForm.version"></div><div class="col-md-6 mb-3"><label class="small fw-bold">檢驗工時 (分)</label><input type="number" step="0.1" class="form-control" v-model.number="specForm.inspection_hours"></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary w-100">儲存</button></div></form></div></div></div>
+
+    <!-- 工單 Modal -->
+    <div class="modal fade" id="orderModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5>{{ isEditing ? '編輯' : '新增' }}工單</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><form @submit.prevent="saveOrder"><div class="modal-body"><div class="mb-3"><label class="small fw-bold">製令編號</label><input type="text" class="form-control" v-model="orderForm.order_number" required></div><div class="mb-3"><label class="small fw-bold">品號</label><select class="form-select" v-model="orderForm.product_number" @change="syncProductName" required><option value="" disabled>請選擇</option><option v-for="s in specs" :key="s.id" :value="s.product_number">{{ s.product_number }}</option></select></div><div class="mb-3"><label class="small fw-bold">品名</label><input type="text" class="form-control bg-light" v-model="orderForm.product_name" readonly></div><div class="mb-3"><label class="small fw-bold">數量</label><input type="number" class="form-control" v-model.number="orderForm.quantity" required></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary w-100">儲存</button></div></form></div></div></div>
+
+    <!-- IPQC 紀錄 Modal -->
+    <div class="modal fade" id="ipqcModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-white border-bottom-0">
+                    <h5 class="modal-title-bold"><i class="bi bi-clipboard-check me-2 text-primary"></i>{{ isEditing ? '編輯' : '新增' }} IPQC 品質巡檢紀錄</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form @submit.prevent="saveIpqc">
+                    <div class="modal-body px-4 py-3">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label-custom">日期</label>
+                                <input type="date" class="form-control shadow-sm" v-model="ipqcForm.date" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">時間</label>
+                                <input type="time" class="form-control shadow-sm" v-model="ipqcForm.time" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">巡檢員</label>
+                                <input type="text" class="form-control bg-auto-fill shadow-sm" v-model="ipqcForm.inspector" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">作業員</label>
+                                <select class="form-select shadow-sm" v-model="ipqcForm.operator" required>
+                                    <option value="" disabled>請選擇作業員</option>
+                                    <option v-for="op in operators" :key="op.id" :value="op.name">{{ op.name }} ({{ op.department }})</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label-custom">製令編號</label>
+                                <input type="text" class="form-control shadow-sm" v-model="ipqcForm.order_number" @input="syncIpqcFromOrder" placeholder="請輸入製令編號" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label-custom">品號 (自動)</label>
+                                <input type="text" class="form-control bg-auto-fill shadow-sm" :class="{'text-danger fw-bold': ipqcForm.product_number === '未建檔'}" v-model="ipqcForm.product_number" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">數量 (自動)</label>
+                                <input type="number" class="form-control bg-auto-fill shadow-sm" :class="{'text-danger fw-bold': ipqcForm.quantity === 0 && ipqcForm.product_number === '未建檔'}" v-model.number="ipqcForm.quantity" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-9">
+                                <label class="form-label-custom">品名 (自動)</label>
+                                <input type="text" class="form-control bg-auto-fill shadow-sm" :class="{'text-danger fw-bold': ipqcForm.product_name === '未建檔'}" v-model="ipqcForm.product_name" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">圖面版本</label>
+                                <input type="text" class="form-control shadow-sm" v-model="ipqcForm.draw_ver" placeholder="版本號碼">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label-custom">規格 (自動)</label>
+                                <input type="text" class="form-control bg-auto-fill shadow-sm" :class="{'text-danger fw-bold': ipqcForm.spec === '未建檔'}" v-model="ipqcForm.spec" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label-custom">不良分類</label>
+                                <select class="form-select shadow-sm" v-model="ipqcForm.defect_classification">
+                                    <option v-for="opt in ['無','無對應圖面','圖物不符','無工單','無檢檢驗表單','尺寸NG','外觀NG','人員作業疏失','無SOP']" :value="opt">{{ opt }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label-custom">不良狀態</label>
+                                <input type="text" class="form-control shadow-sm" v-model="ipqcForm.defect_status" placeholder="輸入詳細不良描述">
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label-custom">處置對策</label>
+                                <textarea class="form-control shadow-sm" v-model="ipqcForm.handling_measures" rows="2" placeholder="輸入後續處置方式"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary px-5 shadow-sm">儲存紀錄</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/vue-demi@0.14.7/lib/index.iife.js"></script>
+<script src="https://unpkg.com/pinia@2.1.7/dist/pinia.iife.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    const { createApp, ref, reactive, onMounted, computed } = Vue;
+    const { createPinia, defineStore } = Pinia;
+
+    const SUPABASE_URL = 'https://uhpztucfioqrdnlfeyxw.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHp0dWNmaW9xcmRubGZleXh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNDc4MjksImV4cCI6MjA3MzkyMzgyOX0.3DA16OAzhXBpLxclMNee6deY_a6Z3qbSZyLVnX69NOU';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const fetchAllWithPagination = async (tableName, orderByField = 'created_at') => {
+        let allResults = [];
+        let from = 0, to = 999, hasMore = true;
+        while (hasMore) {
+            const { data, error } = await supabaseClient.from(tableName).select('*').range(from, to).order(orderByField, { ascending: false });
+            if (error) break;
+            if (data && data.length > 0) {
+                allResults = [...allResults, ...data];
+                from += 1000; to += 1000;
+                if (data.length < 1000) hasMore = false;
+            } else hasMore = false;
+            if (allResults.length >= 20000) hasMore = false;
+        }
+        return allResults;
+    };
+
+    const useAuthStore = defineStore('auth', {
+        state: () => ({ user: null, isLoggedIn: false }),
+        actions: { setSession(s) { this.user = s?.user || null; this.isLoggedIn = !!s; } }
+    });
+
+    const app = createApp({
+        setup() {
+            const auth = useAuthStore();
+            const view = ref('login');
+            const loading = ref(true);
+            const sidebarOpen = ref(false);
+            const ipqcMenuOpen = ref(true);
+
+            const specs = ref([]); const orders = ref([]); const ipqcList = ref([]); const operators = ref([]);
+            const isEditing = ref(false); const editId = ref(null);
+            
+            const specForm = reactive({ product_number: '', product_name: '', spec: '', version: '', inspection_hours: 0 });
+            const orderForm = reactive({ order_number: '', product_number: '', product_name: '', quantity: 0 });
+            const operatorForm = reactive({ department: '', name: '' });
+            const ipqcForm = reactive({ 
+                date: '', time: '', order_number: '', operator: '', draw_ver: '', 
+                product_number: '', product_name: '', spec: '', quantity: 0, 
+                inspector: '', defect_classification: '無', defect_status: '', handling_measures: '' 
+            });
+            const form = reactive({ email: 'ryowu0329@gmail.com', password: 'leo140814', name: '' });
+
+            // --- 狀態控制：搜尋、排序、分頁 ---
+            const ipqcSearch = ref(''); const ipqcFilterDefect = ref(''); const ipqcSortField = ref('date'); const ipqcSortOrder = ref('desc'); const ipqcCurrentPage = ref(1); const ipqcPageSize = ref(10);
+            const specSearch = ref(''); const specSortField = ref('product_number'); const specSortOrder = ref('asc'); const specCurrentPage = ref(1); const specPageSize = ref(10);
+            const orderSearch = ref(''); const orderSortField = ref('order_number'); const orderSortOrder = ref('desc'); const orderCurrentPage = ref(1); const orderPageSize = ref(10);
+            const operatorSearch = ref(''); const operatorSortField = ref('department'); const operatorSortOrder = ref('asc'); const operatorCurrentPage = ref(1); const operatorPageSize = ref(10);
+
+            const fetchSpecs = async () => { specs.value = await fetchAllWithPagination('spec_list', 'product_number'); };
+            const fetchOrders = async () => { orders.value = await fetchAllWithPagination('order_list', 'order_number'); };
+            const fetchIpqc = async () => { ipqcList.value = await fetchAllWithPagination('ipqc_list', 'date'); };
+            const fetchOperators = async () => { operators.value = await fetchAllWithPagination('operator_list', 'department'); };
+
+            const refreshAll = async () => {
+                loading.value = true;
+                await Promise.all([fetchSpecs(), fetchOrders(), fetchIpqc(), fetchOperators()]);
+                loading.value = false;
+            };
+
+            onMounted(async () => {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                auth.setSession(session);
+                supabaseClient.auth.onAuthStateChange((_, s) => {
+                    auth.setSession(s);
+                    if (s && view.value === 'login') { view.value = 'home'; refreshAll(); }
+                    if (!s) view.value = 'login';
                 });
+                if (auth.isLoggedIn) { view.value = 'home'; refreshAll(); }
+                loading.value = false;
+            });
 
-                // IPQC 表單響應式物件
-                const ipqcForm = reactive({
-                    countermeasure: "", customer: "", date: new Date().toISOString().split('T')[0],
-                    dateSerial: "", defectCategory: "", defectDescription: "", department: "",
-                    drawingVersion: "", firstInspection: "否", inspectionHours: null, inspector: "",
-                    itemName: "", itemNumber: "", judgment: "OK", marketType: "", operator: "",
-                    orderNumber: "", quantity: null, serialNumber: "", signProgress: "未發起",
-                    time: new Date().toTimeString().substring(0, 5)
+            const goTo = (v) => { sidebarOpen.value = false; view.value = v; refreshAll(); };
+
+            const genericFilterSort = (list, searchKey, searchFields, sortField, sortOrder) => {
+                let res = [...list];
+                if (searchKey) {
+                    const s = searchKey.toLowerCase();
+                    res = res.filter(item => searchFields.some(f => String(item[f] || '').toLowerCase().includes(s)));
+                }
+                res.sort((a, b) => {
+                    let valA = a[sortField]; let valB = b[sortField];
+                    if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = (valB || '').toLowerCase(); }
+                    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                    return 0;
                 });
+                return res;
+            };
 
-                onMounted(() => {
-                    const savedEmail = localStorage.getItem('savedEmail');
-                    if (savedEmail) { loginForm.email = savedEmail; rememberMe.value = true; }
-                    else { loginForm.email = 'admin@gmail.com'; loginForm.password = 'admin123'; }
+            const getPaginationMeta = (list, currentPage, pageSize) => {
+                const totalPages = Math.ceil(list.length / pageSize) || 1;
+                const startIndex = (currentPage - 1) * pageSize;
+                const endIndex = Math.min(startIndex + pageSize, list.length);
+                const paginatedList = list.slice(startIndex, endIndex);
+                let start = Math.max(1, currentPage - 2);
+                let end = Math.min(totalPages, currentPage + 2);
+                const pages = [];
+                for (let i = start; i <= end; i++) pages.push(i);
+                return { totalPages, startIndex, endIndex, paginatedList, pages };
+            };
 
-                    onAuthStateChanged(auth, async (currentUser) => {
-                        authStore.setUser(currentUser);
-                        if (currentUser) {
-                            await fetchProfile();
-                            await fetchJudgmentOptions();
-                            await fetchDepartmentMappings();
-                            setupIpqcListener();
+            // IPQC Computed
+            const filteredIpqcList = computed(() => {
+                let list = [...ipqcList.value];
+                if (ipqcFilterDefect.value) list = list.filter(item => item.defect_classification === ipqcFilterDefect.value);
+                return genericFilterSort(list, ipqcSearch.value, ['order_number', 'product_number', 'product_name', 'inspector'], ipqcSortField.value, ipqcSortOrder.value);
+            });
+            const ipqcMeta = computed(() => getPaginationMeta(filteredIpqcList.value, ipqcCurrentPage.value, ipqcPageSize.value));
+            const paginatedIpqcList = computed(() => ipqcMeta.value.paginatedList);
+            const ipqcTotalPages = computed(() => ipqcMeta.value.totalPages);
+            const ipqcStartIndex = computed(() => ipqcMeta.value.startIndex);
+            const ipqcEndIndex = computed(() => ipqcMeta.value.endIndex);
+            const ipqcVisiblePages = computed(() => ipqcMeta.value.pages);
+
+            // Spec Computed
+            const filteredSpecList = computed(() => genericFilterSort(specs.value, specSearch.value, ['product_number', 'product_name', 'spec'], specSortField.value, specSortOrder.value));
+            const specMeta = computed(() => getPaginationMeta(filteredSpecList.value, specCurrentPage.value, specPageSize.value));
+            const paginatedSpecList = computed(() => specMeta.value.paginatedList);
+            const specTotalPages = computed(() => specMeta.value.totalPages);
+            const specStartIndex = computed(() => specMeta.value.startIndex);
+            const specEndIndex = computed(() => specMeta.value.endIndex);
+            const specVisiblePages = computed(() => specMeta.value.pages);
+
+            // Order Computed
+            const filteredOrderList = computed(() => genericFilterSort(orders.value, orderSearch.value, ['order_number', 'product_number', 'product_name'], orderSortField.value, orderSortOrder.value));
+            const orderMeta = computed(() => getPaginationMeta(filteredOrderList.value, orderCurrentPage.value, orderPageSize.value));
+            const paginatedOrderList = computed(() => orderMeta.value.paginatedList);
+            const orderTotalPages = computed(() => orderMeta.value.totalPages);
+            const orderStartIndex = computed(() => orderMeta.value.startIndex);
+            const orderEndIndex = computed(() => orderMeta.value.endIndex);
+            const orderVisiblePages = computed(() => orderMeta.value.pages);
+
+            // Operator Computed
+            const filteredOperatorList = computed(() => genericFilterSort(operators.value, operatorSearch.value, ['department', 'name'], operatorSortField.value, operatorSortOrder.value));
+            const operatorMeta = computed(() => getPaginationMeta(filteredOperatorList.value, operatorCurrentPage.value, operatorPageSize.value));
+            const paginatedOperatorList = computed(() => operatorMeta.value.paginatedList);
+            const operatorTotalPages = computed(() => operatorMeta.value.totalPages);
+            const operatorStartIndex = computed(() => operatorMeta.value.startIndex);
+            const operatorEndIndex = computed(() => operatorMeta.value.endIndex);
+            const operatorVisiblePages = computed(() => operatorMeta.value.pages);
+
+            const setIpqcSort = (f) => { if (ipqcSortField.value === f) ipqcSortOrder.value = ipqcSortOrder.value === 'asc' ? 'desc' : 'asc'; else { ipqcSortField.value = f; ipqcSortOrder.value = 'asc'; } };
+            const setSpecSort = (f) => { if (specSortField.value === f) specSortOrder.value = specSortOrder.value === 'asc' ? 'desc' : 'asc'; else { specSortField.value = f; specSortOrder.value = 'asc'; } };
+            const setOrderSort = (f) => { if (orderSortField.value === f) orderSortOrder.value = orderSortOrder.value === 'asc' ? 'desc' : 'asc'; else { orderSortField.value = f; orderSortOrder.value = 'asc'; } };
+            const setOperatorSort = (f) => { if (operatorSortField.value === f) operatorSortOrder.value = operatorSortOrder.value === 'asc' ? 'desc' : 'asc'; else { operatorSortField.value = f; operatorSortOrder.value = 'asc'; } };
+
+            const getSortIcon = (type, field) => {
+                let currentField, currentOrder;
+                if (type === 'ipqc') { currentField = ipqcSortField.value; currentOrder = ipqcSortOrder.value; }
+                else if (type === 'spec') { currentField = specSortField.value; currentOrder = specSortOrder.value; }
+                else if (type === 'order') { currentField = orderSortField.value; currentOrder = orderSortOrder.value; }
+                else { currentField = operatorSortField.value; currentOrder = operatorSortOrder.value; }
+                if (currentField !== field) return 'bi-arrow-down-up opacity-25';
+                return currentOrder === 'asc' ? 'bi-sort-up text-primary' : 'bi-sort-down text-primary';
+            };
+
+            const truncateText = (text, length) => {
+                if (!text) return '-';
+                if (text.length <= length) return text;
+                return text.substring(0, length) + '...';
+            };
+
+            const handleSave = async (tableName, formData, modalId) => {
+                loading.value = true;
+                const payload = JSON.parse(JSON.stringify(formData));
+                delete payload.id; delete payload.created_at;
+                let response;
+                if (isEditing.value) response = await supabaseClient.from(tableName).update(payload).eq('id', editId.value);
+                else response = await supabaseClient.from(tableName).insert([payload]);
+                loading.value = false;
+                if (response.error) Swal.fire('儲存失敗', response.error.message, 'error');
+                else {
+                    const modalEl = document.getElementById(modalId);
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    Swal.fire({ icon: 'success', title: '儲存成功', timer: 1000, showConfirmButton: false });
+                    refreshAll();
+                }
+            };
+
+            const saveSpec = () => handleSave('spec_list', specForm, 'specModal');
+            const saveOrder = () => handleSave('order_list', orderForm, 'orderModal');
+            const saveOperator = () => handleSave('operator_list', operatorForm, 'operatorModal');
+            const saveIpqc = () => handleSave('ipqc_list', ipqcForm, 'ipqcModal');
+
+            const openSpecModal = (it = null) => {
+                isEditing.value = !!it;
+                if (it) { Object.assign(specForm, it); editId.value = it.id; }
+                else { Object.assign(specForm, { product_number:'', product_name:'', spec:'', version: '', inspection_hours: 0 }); }
+                new bootstrap.Modal(document.getElementById('specModal')).show();
+            };
+
+            const openOrderModal = (it = null) => {
+                isEditing.value = !!it;
+                if (it) { Object.assign(orderForm, it); editId.value = it.id; }
+                else { Object.assign(orderForm, { order_number:'', product_number:'', product_name:'', quantity: 0 }); }
+                new bootstrap.Modal(document.getElementById('orderModal')).show();
+            };
+
+            const openOperatorModal = (it = null) => {
+                isEditing.value = !!it;
+                if (it) { Object.assign(operatorForm, it); editId.value = it.id; }
+                else { Object.assign(operatorForm, { department: '', name: '' }); }
+                new bootstrap.Modal(document.getElementById('operatorModal')).show();
+            };
+
+            const openIpqcModal = (it = null) => {
+                isEditing.value = !!it;
+                if (it) { Object.assign(ipqcForm, it); editId.value = it.id; }
+                else {
+                    Object.assign(ipqcForm, {
+                        date: new Date().toISOString().slice(0, 10),
+                        time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+                        order_number: '', operator: '', draw_ver: '', 
+                        product_number: '', product_name: '', spec: '', quantity: 0,
+                        inspector: auth.user?.user_metadata?.full_name || auth.user?.email || '巡檢員',
+                        defect_classification: '無', defect_status: '', handling_measures: ''
+                    });
+                }
+                new bootstrap.Modal(document.getElementById('ipqcModal')).show();
+            };
+
+            const syncProductName = () => { const s = specs.value.find(x => x.product_number === orderForm.product_number); if (s) orderForm.product_name = s.product_name; };
+            
+            const syncIpqcFromOrder = () => {
+                const orderNum = ipqcForm.order_number.trim();
+                if (!orderNum) {
+                    ipqcForm.product_number = ''; ipqcForm.product_name = ''; ipqcForm.quantity = 0; ipqcForm.spec = ''; ipqcForm.draw_ver = '';
+                    return;
+                }
+                const o = orders.value.find(x => x.order_number === orderNum);
+                if (o) {
+                    ipqcForm.product_number = o.product_number;
+                    ipqcForm.product_name = o.product_name;
+                    ipqcForm.quantity = o.quantity;
+                    const s = specs.value.find(x => x.product_number === o.product_number);
+                    ipqcForm.spec = s ? s.spec : '未建檔';
+                    ipqcForm.draw_ver = s ? s.version : '';
+                } else {
+                    ipqcForm.product_number = '未建檔';
+                    ipqcForm.product_name = '未建檔';
+                    ipqcForm.quantity = 0;
+                    ipqcForm.spec = '未建檔';
+                    ipqcForm.draw_ver = '';
+                }
+            };
+
+            const confirmDelete = async (table, id) => {
+                const r = await Swal.fire({ title: '確定刪除？', icon: 'warning', showCancelButton: true });
+                if (r.isConfirmed) { await supabaseClient.from(table).delete().eq('id', id); refreshAll(); }
+            };
+
+            const exportExcel = (data, name) => {
+                const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data");
+                XLSX.writeFile(wb, `${name}.xlsx`);
+            };
+
+            const bulkInsert = async (table, items, cb) => {
+                loading.value = true;
+                const { error } = await supabaseClient.from(table).insert(items);
+                loading.value = false;
+                if (!error) { Swal.fire('成功', `資料已匯入`, 'success'); cb(); }
+                else Swal.fire('匯入失敗', error.message, 'error');
+            };
+
+            const handleImport = (event, tableName, callback, mapper, filterFn = null) => {
+                const file = event.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                        let items = jsonData.map(mapper);
+                        
+                        // 如果有提供過濾函式（例如檢查重複），在此執行
+                        if (filterFn) items = items.filter(filterFn);
+
+                        // 移除系統自動產生的欄位以免干擾匯入
+                        items.forEach(i => { delete i.id; delete i.created_at; });
+
+                        if (items.length === 0) {
+                            Swal.fire('提示', '未偵測到新資料（資料皆已存在於系統中）', 'info');
+                            event.target.value = '';
+                            return;
                         }
-                    });
-                });
 
-                const fetchDepartmentMappings = async () => {
-                    try {
-                        const deptRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'department');
-                        const snapshot = await getDocs(deptRef);
-                        if (!snapshot.empty) deptMappings.value = snapshot.docs.map(doc => doc.data());
-                    } catch (e) { console.error(e); }
+                        Swal.fire({ title: '匯入確認', text: `讀取到 ${items.length} 筆新資料`, icon: 'question', showCancelButton: true, confirmButtonText: '追加' }).then(async (result) => {
+                            if (result.isConfirmed) await bulkInsert(tableName, items, callback);
+                            event.target.value = ''; // 清除輸入框以利下次匯入
+                        });
+                    } catch (err) { Swal.fire('錯誤', '解析失敗', 'error'); }
                 };
+                reader.readAsArrayBuffer(file);
+            };
 
-                const fetchJudgmentOptions = async () => {
-                    try {
-                        const judgmentRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'judgment');
-                        const snapshot = await getDocs(judgmentRef);
-                        if (snapshot.empty) { judgmentOptions.value = [{ value: 'OK', label: 'OK' }, { value: 'MRB', label: 'MRB' }, { value: 'NG', label: 'NG' }]; }
-                        else {
-                            const options = snapshot.docs.map(doc => ({ value: doc.data().value || doc.id, label: doc.data().label || doc.id, order: doc.data().order || 99 }));
-                            options.sort((a, b) => a.order - b.order);
-                            judgmentOptions.value = options;
-                        }
-                    } catch (e) { judgmentOptions.value = [{ value: 'OK', label: 'OK' }, { value: 'MRB', label: 'MRB' }, { value: 'NG', label: 'NG' }]; }
-                };
+            const triggerImportSpecs = () => document.getElementById('importSpecsInput').click();
+            const triggerImportOrders = () => document.getElementById('importOrdersInput').click();
+            const triggerImportIpqc = () => document.getElementById('importIpqcInput').click();
+            const triggerImportOperators = () => document.getElementById('importOperatorsInput').click();
 
-                const setupIpqcListener = () => {
-                    const ipqcRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records');
-                    onSnapshot(ipqcRef, (snapshot) => {
-                        const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        records.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-                        ipqcRecords.value = records;
-                    });
-                };
+            const handleFileImportSpecs = (e) => handleImport(e, 'spec_list', fetchSpecs, (r) => ({ 
+                product_number: String(r['品號'] || r['product_number'] || '').trim(), 
+                product_name: String(r['品名'] || r['product_name'] || '').trim(), 
+                spec: String(r['規格'] || r['spec'] || '').trim(), 
+                version: String(r['版次'] || r['version'] || '').trim(), 
+                inspection_hours: Number(r['檢驗工時'] || r['inspection_hours'] || 0) 
+            }));
 
-                const handleLogin = async () => {
-                    loginErrorMsg.value = ''; isLoading.value = true;
-                    try { await signInWithEmailAndPassword(auth, loginForm.email, loginForm.password); if (rememberMe.value) localStorage.setItem('savedEmail', loginForm.email); }
-                    catch (e) { loginErrorMsg.value = '電子信箱或密碼錯誤。'; }
-                    finally { isLoading.value = false; }
-                };
+            const handleFileImportOrders = (e) => handleImport(e, 'order_list', fetchOrders, (r) => ({ 
+                order_number: String(r['製令編號'] || r['order_number'] || '').trim(), 
+                product_number: String(r['品號'] || r['product_number'] || '').trim(), 
+                product_name: String(r['品名'] || r['product_name'] || '').trim(), 
+                quantity: Number(r['數量'] || r['quantity'] || 0) 
+            }));
 
-                const handleRegister = async () => {
-                    isLoading.value = true;
-                    try {
-                        const res = await createUserWithEmailAndPassword(auth, registerForm.email, registerForm.password);
-                        await sendEmailVerification(res.user);
-                        Swal.fire({ icon: 'success', title: '註冊成功', text: '已發送驗證信，請查收。' });
-                        authView.value = 'login';
-                    } catch (e) { Swal.fire({ icon: 'error', title: '註冊失敗', text: e.message }); }
-                    finally { isLoading.value = false; }
-                };
+            const handleFileImportOperators = (e) => handleImport(
+                e, 
+                'operator_list', 
+                fetchOperators, 
+                // 修改處：同時支援「部門別/姓名」(手打檔) 與 「department/name」(系統匯出檔)
+                (r) => ({ 
+                    department: String(r['部門別'] || r['department'] || '').trim(), 
+                    name: String(r['姓名'] || r['name'] || '').trim() 
+                }),
+                // 比對資料庫現有資料：若部門與姓名皆相同則視為重複
+                (newItem) => !operators.value.some(ex => ex.department === newItem.department && ex.name === newItem.name)
+            );
+            const handleFileImportIpqc = (e) => handleImport(e, 'ipqc_list', fetchIpqc, (r) => ({
+                date: String(r['日期'] || r['date'] || '').trim(), 
+                time: String(r['時間'] || r['time'] || '').trim(), 
+                order_number: String(r['製令編號'] || r['order_number'] || '').trim(),
+                operator: String(r['作業人員'] || r['operator'] || '').trim(), 
+                draw_ver: String(r['圖面版次'] || r['draw_ver'] || '').trim(),
+                product_number: String(r['品號'] || r['product_number'] || '').trim(), 
+                product_name: String(r['品名'] || r['product_name'] || '').trim(),
+                spec: String(r['規格'] || r['spec'] || '').trim(), 
+                quantity: Number(r['數量'] || r['quantity'] || 0),
+                inspector: String(r['巡檢員'] || r['inspector'] || '').trim(), 
+                defect_classification: String(r['不良分類'] || r['defect_classification'] || '無').trim(),
+                defect_status: String(r['不良狀況'] || r['defect_status'] || '').trim(), 
+                handling_measures: String(r['處置對策'] || r['handling_measures'] || '').trim()
+            }));
 
-                const handleLogout = async () => { await signOut(auth); authView.value = 'login'; };
+            const handleLogin = async () => { loading.value = true; const { error } = await supabaseClient.auth.signInWithPassword({ email: form.email, password: form.password }); loading.value = false; if (error) Swal.fire('登入失敗', '帳號密碼錯誤', 'error'); };
+            const handleLogout = async () => { await supabaseClient.auth.signOut(); goTo('login'); };
+            const handleUpdateProfile = async () => { await supabaseClient.auth.updateUser({ data: { full_name: form.name } }); Swal.fire('更新成功', '', 'success').then(() => goTo('home')); };
 
-                const fetchProfile = async () => {
-                    if (!authStore.user) return;
-                    try {
-                        const profileRef = doc(db, 'artifacts', APP_ID, 'users', authStore.user.uid, 'profile', 'data');
-                        const snap = await getDoc(profileRef);
-                        if (snap.exists()) Object.assign(profileForm, snap.data());
-                    } catch (e) { console.error(e); }
-                };
+            return {
+                auth, view, form, loading, sidebarOpen, ipqcMenuOpen, specs, orders, ipqcList, operators, specForm, orderForm, operatorForm, ipqcForm, isEditing,
+                ipqcSearch, ipqcFilterDefect, ipqcSortField, ipqcSortOrder, ipqcCurrentPage, ipqcPageSize,
+                paginatedIpqcList, ipqcTotalPages, ipqcStartIndex, ipqcEndIndex, ipqcVisiblePages, filteredIpqcList,
+                specSearch, specSortField, specSortOrder, specCurrentPage, specPageSize,
+                paginatedSpecList, specTotalPages, specStartIndex, specEndIndex, specVisiblePages, filteredSpecList,
+                orderSearch, orderSortField, orderSortOrder, orderCurrentPage, orderPageSize,
+                paginatedOrderList, orderTotalPages, orderStartIndex, orderEndIndex, orderVisiblePages, filteredOrderList,
+                operatorSearch, operatorSortField, operatorSortOrder, operatorCurrentPage, operatorPageSize,
+                paginatedOperatorList, operatorTotalPages, operatorStartIndex, operatorEndIndex, operatorVisiblePages, filteredOperatorList,
+                setIpqcSort, setSpecSort, setOrderSort, setOperatorSort, getSortIcon, truncateText,
+                openSpecModal, saveSpec, openOrderModal, saveOrder, openOperatorModal, saveOperator, openIpqcModal, saveIpqc,
+                syncProductName, syncIpqcFromOrder, goTo, handleLogin, handleLogout, handleUpdateProfile,
+                confirmDeleteSpec: (id) => confirmDelete('spec_list', id), confirmDeleteOrder: (id) => confirmDelete('order_list', id), confirmDeleteIpqc: (id) => confirmDelete('ipqc_list', id), confirmDeleteOperator: (id) => confirmDelete('operator_list', id),
+                exportSpecs: () => exportExcel(specs.value, '規格總表備份'), exportOrders: () => exportExcel(orders.value, '製令總表備份'), exportOperators: () => exportExcel(operators.value, '人員名單備份'), exportIpqc: () => exportExcel(filteredIpqcList.value, 'IPQC總表匯出'),
+                triggerImportSpecs, triggerImportOrders, triggerImportIpqc, triggerImportOperators, handleFileImportSpecs, handleFileImportOrders, handleFileImportIpqc, handleFileImportOperators
+            };
+        }
+    });
 
-                const saveProfile = async () => {
-                    if (!authStore.user) return;
-                    isLoading.value = true;
-                    try {
-                        const profileRef = doc(db, 'artifacts', APP_ID, 'users', authStore.user.uid, 'profile', 'data');
-                        await setDoc(profileRef, { ...profileForm, updatedAt: serverTimestamp() }, { merge: true });
-                        Swal.fire({ icon: 'success', title: '個人資料儲存成功', timer: 1500, showConfirmButton: false });
-                    } catch (e) { Swal.fire({ icon: 'error', title: '儲存失敗' }); }
-                    finally { isLoading.value = false; }
-                };
+    app.use(createPinia());
+    app.mount('#app');
+</script>
 
-                const resetAndOpenModal = () => {
-                    editingId.value = null;
-                    Object.assign(ipqcForm, { 
-                        countermeasure: "", customer: "", date: new Date().toISOString().split('T')[0], 
-                        dateSerial: "", defectCategory: "", defectDescription: "", department: "", 
-                        drawingVersion: "", firstInspection: "否", inspectionHours: null, inspector: profileForm.name || authStore.user.email, 
-                        itemName: "", itemNumber: "", judgment: "OK", marketType: "", operator: "", 
-                        orderNumber: "", quantity: null, serialNumber: "", signProgress: "未發起", 
-                        time: new Date().toTimeString().substring(0, 5) 
-                    });
-                    const modal = new bootstrap.Modal(document.getElementById('ipqcModal'));
-                    modal.show();
-                };
-
-                const editIpqc = (record) => {
-                    editingId.value = record.id;
-                    const { id, createdAt, creatorId, creatorEmail, ...editableData } = record;
-                    Object.assign(ipqcForm, editableData);
-                    const modal = new bootstrap.Modal(document.getElementById('ipqcModal'));
-                    modal.show();
-                };
-
-                const deleteIpqc = async (id) => {
-                    const result = await Swal.fire({
-                        title: '確定刪除？', text: "資料刪除後將無法恢復！", icon: 'warning',
-                        showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: '刪除', cancelButtonText: '取消'
-                    });
-                    if (result.isConfirmed) {
-                        try {
-                            await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records', id));
-                            Swal.fire({ icon: 'success', title: '已刪除', timer: 1000, showConfirmButton: false });
-                        } catch (e) { Swal.fire({ icon: 'error', title: '刪除失敗' }); }
-                    }
-                };
-
-                const saveIpqc = async () => {
-                    if (!authStore.user) return;
-                    const mapping = deptMappings.value.find(m => ipqcForm.orderNumber && ipqcForm.orderNumber.startsWith(m.value));
-                    if (mapping) ipqcForm.department = mapping.dep;
-                    ipqcForm.inspector = profileForm.name || authStore.user.email;
-                    
-                    isLoading.value = true;
-                    try {
-                        if (editingId.value) {
-                            await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records', editingId.value), { ...ipqcForm, updatedAt: serverTimestamp() });
-                            Swal.fire({ icon: 'success', title: '更改成功', timer: 1000, showConfirmButton: false });
-                        } else {
-                            await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'ipqc_records'), { ...ipqcForm, creatorEmail: authStore.user.email, creatorId: authStore.user.uid, createdAt: serverTimestamp() });
-                            Swal.fire({ icon: 'success', title: '儲存成功', timer: 1000, showConfirmButton: false });
-                        }
-                        bootstrap.Modal.getInstance(document.getElementById('ipqcModal')).hide();
-                        editingId.value = null;
-                    } catch (e) { Swal.fire({ icon: 'error', title: '操作失敗', text: e.message }); }
-                    finally { isLoading.value = false; }
-                };
-
-                return {
-                    authStore, authView, currentView, sidebarVisible, isLoading, showPassword, rememberMe, loginErrorMsg,
-                    loginForm, registerForm, ipqcRecords, judgmentOptions, ipqcForm, profileForm, editingId,
-                    handleLogin, handleRegister, handleLogout, saveProfile, saveIpqc, editIpqc, deleteIpqc, resetAndOpenModal
-                };
-            }
-        });
-
-        const pinia = createPinia();
-        vueApp.use(pinia);
-        vueApp.mount('#app');
-    </script>
 </body>
 </html>
